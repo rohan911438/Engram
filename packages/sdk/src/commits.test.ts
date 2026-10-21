@@ -148,3 +148,18 @@ describe("bisect", () => {
     await expect(e.bisect({ good: "HEAD", bad: "HEAD", isBad: () => true })).rejects.toThrow(/ancestor|same commit/);
   });
 });
+
+describe("move-event anchors", () => {
+  it("checkMoveAnchor accepts a matching event and rejects a different root", async () => {
+    const { checkMoveAnchor } = await import("./anchor.js");
+    const ep = e.observe({ source: "user", data: 1 });
+    create("a", "A", [ep.id]);
+    const c = await e.commit("one");
+    const bytes = (h: string) => [...Buffer.from(h, "hex")];
+    const fakeTatum = (root: string) =>
+      ({ rpc: async () => ({ checkpoint: "42", timestampMs: "1", events: [{ type: "0xpkg::anchor::Anchored", parsedJson: { commit_id: bytes(c.id), merkle_root: bytes(root), agent_pubkey: bytes(c.manifest.agentPubKey) } }] }) }) as never;
+    const anchor = { method: "move-event" as const, objectId: "0xpkg", txDigest: "D" };
+    expect((await checkMoveAnchor(fakeTatum(c.manifest.merkleRoot), anchor, c)).ok).toBe(true);
+    expect((await checkMoveAnchor(fakeTatum("00".repeat(32)), anchor, c)).detail).toMatch(/merkle_root differs/);
+  });
+});

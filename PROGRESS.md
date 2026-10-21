@@ -34,3 +34,4 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 - Fix `SUI_MNEMONIC` in `.env` (13 words — one is a typo).
 - Gemini quota resets daily (20 requests/model/day on the free tier). More keys from **different Google Cloud projects**, or enabling billing, would remove this limit.
 - ~$5 of SUI (+ a few USDC for the payments award) on the wallet before 7 Nov.
+- **21 Oct** — M9b: `contracts/engram_anchor` (Move: emits `Anchored{commit_id, merkle_root, agent_pubkey, parent, manifest_blob}`), `MoveAnchorer` signs with the wallet and sends through Tatum, `verify` re-reads the event via Tatum and compares root/commit/agent. Enabled by `ENGRAM_ANCHOR_PACKAGE` in `.env`. Gemini: 2 more keys added (4 total).

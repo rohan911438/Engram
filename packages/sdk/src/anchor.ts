@@ -1,5 +1,9 @@
+import { Transaction } from "@mysten/sui/transactions";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { SuiJsonRpcClient, JsonRpcHTTPTransport } from "@mysten/sui/jsonRpc";
+import { hexToBytes } from "./crypto.js";
 import { blobIdFromU256, type TatumSui } from "./tatum.js";
-import type { Anchor } from "./types.js";
+import type { Anchor, Commit } from "./types.js";
 
 export interface AnchorCheck {
   ok: boolean;
@@ -12,7 +16,9 @@ export interface Anchorer {
   /** Locates the Sui record for a Walrus blob. Null if it isn't visible yet. */
   find(blobId: string): Promise<Anchor | null>;
   /** Independently re-reads the chain to confirm an anchor. */
-  check(anchor: Anchor, blobId: string): Promise<AnchorCheck>;
+  check(anchor: Anchor, blobId: string, commit: Commit): Promise<AnchorCheck>;
+  /** Anchorers that write to chain themselves (option B) implement this instead of relying on `find`. */
+  publish?(commit: Commit): Promise<Anchor | null>;
 }
 
 /**
@@ -49,7 +55,8 @@ export class WalrusBlobAnchorer implements Anchorer {
     return null;
   }
 
-  async check(anchor: Anchor, blobId: string): Promise<AnchorCheck> {
+  async check(anchor: Anchor, blobId: string, commit: Commit): Promise<AnchorCheck> {
+    if (anchor.method === "move-event") return checkMoveAnchor(this.tatum, anchor, commit);
     const obj = await this.tatum.getObject(anchor.objectId);
     if (!obj) return { ok: false, detail: `Sui object ${anchor.objectId} not found` };
     const fields = obj.content?.fields as { blob_id?: string; certified_epoch?: number | null } | undefined;
@@ -84,4 +91,83 @@ export class FakeAnchorer implements Anchorer {
       ? { ok: true, detail: `fake anchor ${a.txDigest}`, timestampMs: a.timestampMs }
       : { ok: false, detail: "no such anchor" };
   }
+}
+
+// ---- Option B: own Move module ------------------------------------------------
+
+
+export interface MoveAnchorerOptions {
+  tatum: TatumSui;
+  tatumApiKey: string;
+  /** Published `engram_anchor` package ID. */
+  packageId: string;
+  /** Wallet that pays gas (BIP-39 phrase). */
+  mnemonic: string;
+}
+
+/**
+ * Option B anchoring: each commit calls `engram_anchor::anchor::anchor`, which
+ * emits an `Anchored` event with the commit ID and Merkle root in the clear.
+ * The transaction is sent and later re-read through Tatum's Sui RPC.
+ */
+export class MoveAnchorer implements Anchorer {
+  private client: SuiJsonRpcClient;
+  private keypair: Ed25519Keypair;
+
+  constructor(private opts: MoveAnchorerOptions) {
+    this.keypair = Ed25519Keypair.deriveKeypair(opts.mnemonic.trim());
+    this.client = new SuiJsonRpcClient({
+      network: "mainnet",
+      transport: new JsonRpcHTTPTransport({ url: opts.tatum.url, rpc: { headers: { "x-api-key": opts.tatumApiKey } } }),
+    });
+  }
+
+  get address(): string {
+    return this.keypair.toSuiAddress();
+  }
+
+  get eventType(): string {
+    return `${this.opts.packageId}::anchor::Anchored`;
+  }
+
+  async publish(c: Commit): Promise<Anchor | null> {
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${this.opts.packageId}::anchor::anchor`,
+      arguments: [
+        tx.pure.vector("u8", hexToBytes(c.manifest.agentPubKey)),
+        tx.pure.vector("u8", hexToBytes(c.id)),
+        tx.pure.vector("u8", hexToBytes(c.manifest.merkleRoot)),
+        tx.pure.vector("u8", c.manifest.parent ? hexToBytes(c.manifest.parent) : new Uint8Array()),
+        tx.pure.vector("u8", new TextEncoder().encode(c.manifestBlobId ?? "")),
+        tx.object.clock(),
+      ],
+    });
+    const res = await this.client.signAndExecuteTransaction({ transaction: tx, signer: this.keypair, options: { showEffects: true } });
+    if (res.effects?.status.status !== "success") throw new Error(`anchor transaction failed: ${res.effects?.status.error ?? "unknown"}`);
+    await this.client.waitForTransaction({ digest: res.digest });
+    const t = await this.opts.tatum.getTransaction(res.digest);
+    return { method: "move-event", objectId: this.opts.packageId, txDigest: res.digest, checkpoint: t.checkpoint, timestampMs: t.timestampMs };
+  }
+
+  async find(): Promise<Anchor | null> {
+    return null; // option B anchors are published, not discovered
+  }
+
+  async check(anchor: Anchor, _blobId: string, c: Commit): Promise<AnchorCheck> {
+    return checkMoveAnchor(this.opts.tatum, anchor, c);
+  }
+}
+
+/** Re-reads an `Anchored` event through Tatum and compares it with the commit. */
+export async function checkMoveAnchor(tatum: TatumSui, anchor: Anchor, c: Commit): Promise<AnchorCheck> {
+  const tx = await tatum.rpc<{ checkpoint?: string; timestampMs?: string; events?: { type: string; parsedJson?: Record<string, unknown> }[] }>("sui_getTransactionBlock", [anchor.txDigest, { showEvents: true }]);
+  const ev = tx.events?.find((e) => e.type === `${anchor.objectId}::anchor::Anchored`);
+  if (!ev?.parsedJson) return { ok: false, detail: `no Anchored event in tx ${anchor.txDigest}` };
+  const hex = (v: unknown) => (Array.isArray(v) ? Buffer.from(v as number[]).toString("hex") : typeof v === "string" ? Buffer.from(v, "base64").toString("hex") : "");
+  const j = ev.parsedJson;
+  if (hex(j.commit_id) !== c.id) return { ok: false, detail: "event commit_id differs from this commit" };
+  if (hex(j.merkle_root) !== c.manifest.merkleRoot) return { ok: false, detail: "event merkle_root differs from this commit" };
+  if (hex(j.agent_pubkey) !== c.manifest.agentPubKey) return { ok: false, detail: "event names a different agent key" };
+  return { ok: true, detail: `Anchored event: root ${c.manifest.merkleRoot.slice(0, 10)}… public in checkpoint ${tx.checkpoint}`, timestampMs: Number(tx.timestampMs ?? 0) };
 }

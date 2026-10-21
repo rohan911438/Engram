@@ -1,0 +1,6 @@
+[package]
+name = "engram_anchor"
+edition = "2024"
+
+[addresses]
+engram_anchor = "0x0"

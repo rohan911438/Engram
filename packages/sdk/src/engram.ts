@@ -410,7 +410,7 @@ export class Engram {
     const c = this.getCommit(id);
     if (!c) throw new Error(`unknown commit ${id}`);
     if (c.anchor || !this.anchorer || !c.manifestBlobId) return c;
-    const anchor = await this.anchorer.find(c.manifestBlobId);
+    const anchor = this.anchorer.publish ? await this.anchorer.publish(c) : await this.anchorer.find(c.manifestBlobId);
     if (!anchor) return c;
     const next = { ...c, anchor };
     this.store.put("commits", id, next);
@@ -660,7 +660,7 @@ export class Engram {
     else if (!c.anchor || !c.manifestBlobId) add("sui anchor", false, "commit has no anchor yet (run `engram anchor`)");
     else {
       try {
-        const r = await this.anchorer.check(c.anchor, c.manifestBlobId);
+        const r = await this.anchorer.check(c.anchor, c.manifestBlobId, c);
         const timeOk = !r.timestampMs || r.timestampMs >= m.ts - 5 * 60_000;
         add("sui anchor", r.ok && timeOk, r.ok && !timeOk ? "anchor is older than the commit — impossible" : r.detail);
         if (r.ok && r.timestampMs) add("anchored at", true, new Date(r.timestampMs).toISOString());

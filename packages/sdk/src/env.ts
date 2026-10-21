@@ -1,4 +1,4 @@
-import { WalrusBlobAnchorer } from "./anchor.js";
+import { MoveAnchorer, WalrusBlobAnchorer, type Anchorer } from "./anchor.js";
 import { GeminiLLM, type LLM } from "./llm.js";
 import { WalrusMemoryRemote, type RemoteHit, type RemoteMemory } from "./remote.js";
 import { TatumSui } from "./tatum.js";
@@ -8,11 +8,14 @@ import { TatumSui } from "./tatum.js";
  *   MEMWAL_KEY, MEMWAL_ACCOUNT_ID, MEMWAL_SERVER_URL   Walrus Memory
  *   TATUM_API_KEY (or TATUM_API_KEY_MAINNET)            Tatum Sui RPC
  *   GEMINI_API_KEYS (comma-separated), GEMINI_MODEL     consolidation LLM
+ *   ENGRAM_ANCHOR_PACKAGE + SUI_MNEMONIC                anchor commits with the engram_anchor Move module
  */
 export interface EnvServices {
   remote: RemoteMemory;
   tatum?: TatumSui;
-  anchorer?: WalrusBlobAnchorer;
+  anchorer?: Anchorer;
+  /** Set when the Move-module anchorer could not be used, and why. */
+  anchorWarning?: string;
   /** Throws a helpful error if no LLM key is configured. */
   llm(): LLM;
 }
@@ -21,13 +24,23 @@ export function servicesFromEnv(env: Record<string, string | undefined> = proces
   const tatumKey = env.TATUM_API_KEY ?? env.TATUM_API_KEY_MAINNET;
   const tatum = tatumKey ? new TatumSui({ apiKey: tatumKey }) : undefined;
   const accountId = env.MEMWAL_ACCOUNT_ID;
+  let anchorer: Anchorer | undefined = tatum && accountId ? new WalrusBlobAnchorer(tatum, accountId) : undefined;
+  let anchorWarning: string | undefined;
+  if (tatum && tatumKey && env.ENGRAM_ANCHOR_PACKAGE) {
+    try {
+      anchorer = new MoveAnchorer({ tatum, tatumApiKey: tatumKey, packageId: env.ENGRAM_ANCHOR_PACKAGE, mnemonic: env.SUI_MNEMONIC ?? "" });
+    } catch (err) {
+      anchorWarning = `ENGRAM_ANCHOR_PACKAGE set but SUI_MNEMONIC is unusable (${(err as Error).message}) — using Walrus Blob anchoring`;
+    }
+  }
   return {
     remote: new LazyRemote(() => {
       if (!env.MEMWAL_KEY || !accountId) throw new Error("Walrus Memory is not configured: set MEMWAL_KEY and MEMWAL_ACCOUNT_ID in .env");
       return new WalrusMemoryRemote({ key: env.MEMWAL_KEY, accountId, serverUrl: env.MEMWAL_SERVER_URL });
     }),
     tatum,
-    anchorer: tatum && accountId ? new WalrusBlobAnchorer(tatum, accountId) : undefined,
+    anchorer,
+    anchorWarning,
     llm() {
       const keys = (env.GEMINI_API_KEYS ?? env.GEMINI_API_KEY ?? "").split(",").filter(Boolean);
       if (keys.length === 0) throw new Error("No LLM configured: set GEMINI_API_KEYS in .env");

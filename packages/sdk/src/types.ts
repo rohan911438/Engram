@@ -90,8 +90,12 @@ export interface CommitManifest {
 }
 
 export interface Anchor {
-  method: "walrus-blob";
-  /** Sui object ID of the Walrus Blob holding the manifest. */
+  /**
+   * walrus-blob: the manifest's own Walrus Blob object on Sui (option A).
+   * move-event:  an `engram_anchor::anchor::Anchored` event carrying the root publicly (option B).
+   */
+  method: "walrus-blob" | "move-event";
+  /** walrus-blob: Sui object ID of the Walrus Blob. move-event: the package ID. */
   objectId: string;
   /** Sui transaction that created it. */
   txDigest: string;

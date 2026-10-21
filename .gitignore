@@ -10,3 +10,6 @@ dist/
 
 # private planning notes (repo is public)
 Idea/
+
+# local demo repos (contain agent keys)
+demo/
