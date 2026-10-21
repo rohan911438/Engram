@@ -1,0 +1,12 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+node_modules/
+dist/
+.engram/
+*.log
+
+# private planning notes (repo is public)
+Idea/
