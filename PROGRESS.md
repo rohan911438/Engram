@@ -35,3 +35,15 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 - Gemini quota resets daily (20 requests/model/day on the free tier). More keys from **different Google Cloud projects**, or enabling billing, would remove this limit.
 - ~$5 of SUI (+ a few USDC for the payments award) on the wallet before 7 Nov.
 - **21 Oct** — M9b: `contracts/engram_anchor` (Move: emits `Anchored{commit_id, merkle_root, agent_pubkey, parent, manifest_blob}`), `MoveAnchorer` signs with the wallet and sends through Tatum, `verify` re-reads the event via Tatum and compares root/commit/agent. Enabled by `ENGRAM_ANCHOR_PACKAGE` in `.env`. Gemini: 2 more keys added (4 total).
+- **21 Oct** — M11: **Engram web** (`apps/web` + `apps/server`). Premium black homepage (Vengeance UI + Magic UI, MIT; Instrument Serif accents), wallet sign-in (dapp-kit, free personal-message signature), one real agent per wallet at `/app` (run/sync/sleep/commit jobs with live log, tell agent, decisions, memory + forget), read-only `/demo`. Demo agent re-run on **real Walrus Memory + Sui** (checkpoints 336,538,990–336,539,950), same 4/4 → 0/8 → 2/2 → 1/2 story. `Idea/` now committed.
+
+## End of day 1 (21 Oct) — where things stand
+- Run locally: `pnpm build` then `cd apps/server && npx tsx src/main.ts` → http://localhost:8787 (demo data in `demo/money-ops`, git-ignored).
+- Tests: SDK 52 · CLI 4 · money-ops 5 · server 7 — all green.
+
+## Next (day 2)
+1. Sign in with a real wallet in the web app and run the agent end to end on real transactions; fix whatever breaks.
+2. Polish app pages (Agent, Mind, Memory, History, Receipts) to the same premium black style as the homepage.
+3. Deploy (server + web) so judges get a public URL.
+4. Fix `SUI_MNEMONIC` (13 words), install Sui CLI, publish `engram_anchor`, set `ENGRAM_ANCHOR_PACKAGE`.
+5. Stretch: paid `share` via MPP on Sui. Then docs, blog draft, demo video script.
