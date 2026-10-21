@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "pnpm --filter @engram/sdk build && pnpm --filter @engram/inspector build && pnpm --filter @engram/cli build",
+    "build": "pnpm --filter @engram/sdk build && pnpm --filter @engram/web build && pnpm --filter @engram/cli build",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "engram": "node packages/cli/dist/main.js"

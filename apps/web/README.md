@@ -10,6 +10,6 @@ Local web view of an agent's mind, opened with `engram ui`.
 Built on open-source, MIT-licensed components: [shadcn/ui](https://ui.shadcn.com) (Base UI), [React Flow](https://reactflow.dev), [Lucide](https://lucide.dev) icons, Tailwind CSS, Geist font.
 
 ```bash
-pnpm --filter @engram/inspector build   # → dist/, served by `engram ui`
-pnpm --filter @engram/inspector dev     # hot reload; proxy /api to `engram ui` on :4646
+pnpm --filter @engram/web build   # → dist/, served by `engram ui`
+pnpm --filter @engram/web dev     # hot reload; proxy /api to `engram ui` on :4646
 ```

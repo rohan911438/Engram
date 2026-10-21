@@ -23,7 +23,7 @@ function Stat({ icon: Icon, label, value, sub }: { icon: typeof Brain; label: st
 }
 
 /** Beliefs per commit, as a small area chart — the learning curve. */
-function LearningCurve() {
+export function LearningCurve() {
   const { data } = useApi(() => api.commits(), []);
   if (!data || data.length === 0) return <div className="h-32 text-sm text-muted-foreground">No commits yet.</div>;
   const pts = [...data].reverse().map((c) => ({ n: c.manifest.beliefs.length, changes: c.diff.added.length + c.diff.changed.length + c.diff.removed.length, label: c.manifest.message }));

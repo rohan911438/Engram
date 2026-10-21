@@ -139,38 +139,44 @@
     @apply font-sans;
     }
 }
-/* ---- Engram theme (overrides the shadcn defaults above) ---------------- */
+/* ---- Engram theme: pure black, layered shades (overrides shadcn defaults) ---- */
 .dark {
-    --background: oklch(0.13 0.012 270);
-    --foreground: oklch(0.96 0.005 270);
-    --card: oklch(0.17 0.015 270);
-    --card-foreground: oklch(0.96 0.005 270);
-    --popover: oklch(0.18 0.016 270);
-    --popover-foreground: oklch(0.96 0.005 270);
-    --primary: oklch(0.72 0.17 290);
-    --primary-foreground: oklch(0.15 0.02 290);
-    --secondary: oklch(0.22 0.018 270);
-    --secondary-foreground: oklch(0.96 0.005 270);
-    --muted: oklch(0.21 0.015 270);
-    --muted-foreground: oklch(0.68 0.02 270);
-    --accent: oklch(0.24 0.03 280);
-    --accent-foreground: oklch(0.96 0.005 270);
+    --background: oklch(0 0 0);
+    --foreground: oklch(0.97 0 0);
+    --card: oklch(0.13 0.003 280);
+    --card-foreground: oklch(0.97 0 0);
+    --popover: oklch(0.15 0.004 280);
+    --popover-foreground: oklch(0.97 0 0);
+    --primary: oklch(0.74 0.16 292);
+    --primary-foreground: oklch(0.12 0.02 292);
+    --secondary: oklch(0.19 0.004 280);
+    --secondary-foreground: oklch(0.97 0 0);
+    --muted: oklch(0.18 0.003 280);
+    --muted-foreground: oklch(0.64 0.01 280);
+    --accent: oklch(0.2 0.01 285);
+    --accent-foreground: oklch(0.97 0 0);
     --destructive: oklch(0.68 0.2 22);
-    --border: oklch(1 0 0 / 8%);
+    --border: oklch(1 0 0 / 9%);
     --input: oklch(1 0 0 / 12%);
-    --ring: oklch(0.72 0.17 290 / 60%);
-    --chart-1: oklch(0.72 0.17 290);
-    --chart-2: oklch(0.78 0.13 200);
+    --ring: oklch(0.74 0.16 292 / 55%);
+    --chart-1: oklch(0.74 0.16 292);
+    --chart-2: oklch(0.8 0.12 200);
     --chart-3: oklch(0.8 0.15 160);
-    --chart-4: oklch(0.82 0.15 85);
+    --chart-4: oklch(0.83 0.15 85);
     --chart-5: oklch(0.7 0.19 20);
+    --surface-1: oklch(0.09 0.002 280);
+    --surface-2: oklch(0.12 0.003 280);
+    --surface-3: oklch(0.16 0.004 280);
 }
 
 @theme inline {
     --color-ok: oklch(0.78 0.16 160);
     --color-warn: oklch(0.83 0.15 85);
     --color-brand: oklch(0.72 0.17 290);
-    --color-brand-2: oklch(0.78 0.13 200);
+    --color-brand-2: oklch(0.8 0.12 200);
+    --color-surface-1: var(--surface-1);
+    --color-surface-2: var(--surface-2);
+    --color-surface-3: var(--surface-3);
 }
 
 @layer utilities {
@@ -201,3 +207,33 @@
   fill: currentColor !important;
 }
 .react-flow__controls-button:hover { background: var(--accent) !important; }
+/* Subtle noise for depth on large black areas */
+@layer utilities {
+  .bg-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27160%27 height=%27160%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%272%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E");
+  }
+  .text-balance { text-wrap: balance; }
+  .mask-fade-b { mask-image: linear-gradient(to bottom, black 60%, transparent); }
+  .mask-radial { mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%); }
+}
+html, body { background: #000; }
+
+/* ---- From Vengeance UI (MIT) globals: keyframes its components rely on ---- */
+@keyframes flip { 0% { transform: rotateX(0deg); } 25%, 100% { transform: rotateX(90deg); } }
+@keyframes fade { 0% { opacity: 1; } 30%, 100% { opacity: var(--opacity, 0); } }
+@keyframes border-beam { 100% { offset-distance: 100%; } }
+@property --glow-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes glow-angle-rotate { to { --glow-angle: 1turn; } }
+.glow-conic {
+  border-image: conic-gradient(from var(--glow-angle),
+      var(--glow-color-1, #669900), var(--glow-color-2, #99cc33), var(--glow-color-3, #ccee66),
+      var(--glow-color-4, #006699), var(--glow-color-5, #3399cc), var(--glow-color-6, #990066),
+      var(--glow-color-7, #cc3399), var(--glow-color-8, #ff6600), var(--glow-color-9, #ff9900),
+      var(--glow-color-10, #ffcc00), var(--glow-color-1, #669900)) 1;
+  animation: glow-angle-rotate var(--glow-animation-duration, 4s) linear infinite;
+}

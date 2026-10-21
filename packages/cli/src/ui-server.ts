@@ -18,7 +18,7 @@ const TYPES: Record<string, string> = {
 /** Where the built inspector lives: bundled next to the CLI, or in the monorepo. */
 export function findInspectorDist(): string | null {
   const here = dirname(fileURLToPath(import.meta.url));
-  for (const p of [join(here, "inspector"), resolve(here, "../../../apps/inspector/dist")]) {
+  for (const p of [join(here, "inspector"), resolve(here, "../../../apps/web/dist")]) {
     if (existsSync(join(p, "index.html"))) return p;
   }
   return null;
@@ -37,7 +37,7 @@ export function createUiServer(engram: Engram, opts: { staticDir: string | null 
         if (!handler) return send(res, 404, { error: "unknown endpoint" });
         return send(res, 200, await handler(url.searchParams, rest.join("/")));
       }
-      if (!opts.staticDir) return send(res, 404, { error: "inspector not built — run `pnpm --filter @engram/inspector build`" });
+      if (!opts.staticDir) return send(res, 404, { error: "inspector not built — run `pnpm --filter @engram/web build`" });
       serveStatic(opts.staticDir, url.pathname, res);
     } catch (err) {
       send(res, 400, { error: (err as Error).message });
