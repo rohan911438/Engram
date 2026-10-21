@@ -48,7 +48,9 @@ function printReport(title: string, r: VerifyReport) {
     const mark = c.skipped ? pc.dim("–") : c.ok ? pc.green("✔") : pc.red("✘");
     console.log(`  ${mark} ${c.name.padEnd(22)} ${c.skipped ? pc.dim(c.detail) : c.detail}`);
   }
-  console.log(r.ok ? pc.green(pc.bold("\nVALID")) + pc.dim(" — this memory is exactly what was committed, signed and anchored.") : pc.red(pc.bold("\nINVALID")));
+  const partial = r.checks.some((c) => c.skipped);
+  const note = partial ? " — on the checks that ran (some were skipped)." : " — this memory is exactly what was committed, signed and anchored.";
+  console.log(r.ok ? pc.green(pc.bold("\nVALID")) + pc.dim(note) : pc.red(pc.bold("\nINVALID")));
   if (!r.ok) process.exitCode = 1;
 }
 
