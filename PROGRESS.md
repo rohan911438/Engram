@@ -13,7 +13,7 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 | M6 | CLI: init, status, observe, sleep, commit, log, diff, checkout, blame, verify, forget | ⏳ in progress |
 | M7 | Money-ops example agent (Tatum wallet feed) | ⬜ |
 | M8 | Inspector UI (built on open-source components) | ✅ done — 4 views checked in Chrome; 58 tests total |
-| M9 | `bisect`; paid `share` via MPP (stretch) | ⏳ next |
+| M9 | `bisect`; paid `share` via MPP (stretch) | 🟡 bisect done; paid share blocked on funded wallet |
 | M10 | Mainnet demo data, docs, blog draft, video script | ⬜ |
 
 ## Log
@@ -27,3 +27,10 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
   - **Gemini free tier = 20 requests/day per model**, shared by both keys (same Google project). Fixes: batched decisions (~9 calls per replay instead of ~20), daily-quota detection skips exhausted key/model pairs, Gemma models as last fallback (prompt-only JSON).
   - TODO when quota resets: full replay on real Walrus Memory + Sui for the demo repo.
 - **21 Oct** — M8: Inspector (`engram ui`) — Vite + React + shadcn/ui (Base UI, MIT) + React Flow + Tailwind, custom dark theme. Views: Overview (stats, learning curve, live Verify HEAD), Mind (belief graph + commit timeline slider with play; new/revised beliefs glow), History (commit diffs, Sui tx + Walrus manifest links, verify), Receipts (decisions, beliefs used, live verify). Local read-only API on 127.0.0.1 in the CLI; checked in Chrome against the replay repo. Path-traversal test included.
+- **21 Oct** — M9 (part 1): `bisect` in SDK + CLI (`--grep <regex>` offline, `--ask <question> --expect yes` with the LLM at each commit). Finds the first bad commit in log₂(n) tests and prints the belief diff that caused it. CLI now shortens 64-hex addresses.
+  - Paid `share` (MPP on Sui) needs: valid wallet phrase in `.env`, a little SUI + USDC on Mainnet.
+
+## Waiting on the user
+- Fix `SUI_MNEMONIC` in `.env` (13 words — one is a typo).
+- Gemini quota resets daily (20 requests/model/day on the free tier). More keys from **different Google Cloud projects**, or enabling billing, would remove this limit.
+- ~$5 of SUI (+ a few USDC for the payments award) on the wallet before 7 Nov.

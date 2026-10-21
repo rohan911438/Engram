@@ -29,6 +29,8 @@ function open(): Engram {
 // ---- formatting ------------------------------------------------------------
 
 const short = (id: string) => id.slice(0, 8);
+/** Belief statements contain full 64-hex Sui addresses; shorten them for the terminal. */
+const pretty = (s: string) => s.replace(/0x[0-9a-fA-F]{20,}/g, (a) => `${a.slice(0, 10)}…${a.slice(-4)}`);
 const when = (ts: number) => new Date(ts).toISOString().replace("T", " ").slice(0, 16);
 const conf = (c: number) => {
   const s = c.toFixed(2);
@@ -39,7 +41,7 @@ const info = (s: string) => console.log(pc.dim(s));
 
 function printBelief(b: Belief, prefix = "") {
   const status = b.status === "retracted" ? pc.red(" [retracted]") : "";
-  console.log(`${prefix}${pc.cyan(beliefKey(b).padEnd(26))} ${conf(b.confidence)}  ${b.statement}${status}`);
+  console.log(`${prefix}${pc.cyan(beliefKey(b).padEnd(26))} ${conf(b.confidence)}  ${pretty(b.statement)}${status}`);
 }
 
 function printReport(title: string, r: VerifyReport) {
@@ -297,6 +299,48 @@ program
     for (const b of r.retracted) printBelief(b, pc.red("  - "));
     for (const b of r.revised) printBelief(b, pc.yellow("  ~ "));
     info("run `engram commit` to record the tombstone on Walrus + Sui");
+  }));
+
+program
+  .command("bisect <good> <bad>")
+  .description("find the first commit where the agent's memory went wrong")
+  .option("-g, --grep <regex>", "bad = some active belief matches this (case-insensitive)")
+  .option("-a, --ask <question>", "bad = the LLM, using that commit's beliefs, answers like --expect")
+  .option("-e, --expect <word>", "the bad answer to --ask (e.g. yes / no)", "yes")
+  .action(run(async (good: string, bad: string, o: { grep?: string; ask?: string; expect: string }) => {
+    if (!o.grep && !o.ask) throw new Error("say what 'bad' means: --grep <regex> or --ask <question>");
+    const s = services();
+    const e = Engram.open({ dir: s.dir, remote: s.remote, anchorer: s.anchorer });
+    let isBad: (beliefs: Belief[]) => Promise<boolean>;
+    if (o.grep) {
+      const re = new RegExp(o.grep, "i");
+      isBad = async (beliefs) => beliefs.some((b) => re.test(b.statement));
+    } else {
+      const llm = s.llm();
+      const want = o.expect.toLowerCase();
+      isBad = async (beliefs) => {
+        const r = await llm.json<{ answer: string }>(
+          "You are an agent. Answer the question using ONLY these beliefs about your owner. Reply with a one-word answer.",
+          `BELIEFS:\n${beliefs.map((b) => `- ${b.statement}`).join("\n") || "(none)"}\n\nQUESTION: ${o.ask}`,
+          { type: "object", properties: { answer: { type: "string" } }, required: ["answer"] },
+        );
+        return r.answer.toLowerCase().includes(want);
+      };
+    }
+    const r = await e.bisect({
+      good,
+      bad,
+      isBad: async (beliefs, c) => {
+        const verdict = await isBad(beliefs);
+        console.log(`  testing ${pc.yellow(short(c.id))} ${c.manifest.message.padEnd(40)} → ${verdict ? pc.red("bad") : pc.green("good")}`);
+        return verdict;
+      },
+    });
+    console.log(`\n${pc.bold("first bad commit:")} ${pc.yellow(short(r.commit.id))} ${r.commit.manifest.message} ${pc.dim(`(${r.tested} test(s) for ${r.candidates} candidate commit(s))`)}`);
+    for (const b of r.diff.added) printBelief(b, pc.green("  + "));
+    for (const [, b] of r.diff.changed) printBelief(b, pc.yellow("  ~ "));
+    for (const b of r.diff.removed) printBelief(b, pc.red("  - "));
+    info("run `engram blame <belief>` to see which episodes caused it");
   }));
 
 program

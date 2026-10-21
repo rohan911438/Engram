@@ -57,6 +57,16 @@ export interface BeliefDiff {
   removed: Belief[];
 }
 
+export interface BisectResult {
+  /** First commit where the agent behaves badly. */
+  commit: Commit;
+  /** What that commit changed — the likely culprit. */
+  diff: BeliefDiff;
+  steps: { commit: string; bad: boolean }[];
+  tested: number;
+  candidates: number;
+}
+
 export interface BlameEntry {
   episode: Episode;
   /** Decrypted content, or null if forgotten. */
@@ -469,6 +479,36 @@ export class Engram {
     }
     for (const [id, ob] of a) if (!b.has(id)) out.removed.push(ob);
     return out;
+  }
+
+  /**
+   * Binary search over history: given a commit where the agent behaved well
+   * and a later one where it didn't, finds the first bad commit. `isBad`
+   * receives the beliefs at a commit (time travel) — run the agent's test there.
+   */
+  async bisect(opts: { good: string; bad: string; isBad: (beliefs: Belief[], commit: Commit) => Promise<boolean> | boolean }): Promise<BisectResult> {
+    const good = this.resolve(opts.good);
+    const bad = this.resolve(opts.bad);
+    // Commits from good (exclusive) to bad (inclusive), oldest first.
+    const chain = this.log(bad).map((c) => c.id);
+    const gi = chain.indexOf(good);
+    if (gi < 0) throw new Error("the good commit must be an ancestor of the bad commit");
+    const range = chain.slice(0, gi).reverse();
+    if (range.length === 0) throw new Error("good and bad are the same commit");
+    const steps: { commit: string; bad: boolean }[] = [];
+    let lo = 0;
+    let hi = range.length - 1; // range[hi] is known bad
+    while (lo < hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const id = range[mid]!;
+      const isBad = await opts.isBad(this.beliefsAt(id), this.getCommit(id)!);
+      steps.push({ commit: id, bad: isBad });
+      if (isBad) hi = mid;
+      else lo = mid + 1;
+    }
+    const first = this.getCommit(range[lo]!)!;
+    const parent = first.manifest.parent;
+    return { commit: first, steps, tested: steps.length, candidates: range.length, diff: parent ? this.diff(parent, first.id) : { added: this.beliefsAt(first.id), changed: [], removed: [] } };
   }
 
   /** The episodes behind a belief version, decrypted where possible. */
