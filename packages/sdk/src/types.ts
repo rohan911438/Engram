@@ -29,6 +29,8 @@ export interface Episode {
   blobId?: string;
   /** Set when the episode's key was destroyed. */
   forgottenAt?: number;
+  /** Set once `sleep()` has processed it. */
+  consolidatedAt?: number;
 }
 
 /** The decrypted contents of an episode. */

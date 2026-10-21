@@ -3,7 +3,28 @@ import { canonical, decrypt, encrypt, generateKeyPair, hexToBytes, newDataKey, p
 import { LocalStore } from "./store.js";
 import { KeyVault } from "./vault.js";
 import type { RemoteMemory } from "./remote.js";
-import type { Envelope, Episode, EpisodeContent, EpisodeSource } from "./types.js";
+import type { LLM } from "./llm.js";
+import { proposeOps, type BeliefOp } from "./consolidator.js";
+import type { Belief, Envelope, Episode, EpisodeContent, EpisodeSource } from "./types.js";
+
+/** "b_rent@2" */
+export const beliefKey = (b: Pick<Belief, "id" | "version">) => `${b.id}@${b.version}`;
+
+export interface SleepOptions {
+  llm: LLM;
+  /** Domain hint for the consolidator. */
+  context?: string;
+  /** Episodes per LLM call. Default 40. */
+  batchSize?: number;
+}
+
+export interface SleepReport {
+  episodes: number;
+  created: Belief[];
+  revised: Belief[];
+  retracted: Belief[];
+  rejected: { op: unknown; why: string }[];
+}
 
 export interface EngramConfig {
   v: 1;
@@ -135,15 +156,157 @@ export class Engram {
     return JSON.parse(plaintext) as EpisodeContent;
   }
 
+  // ---- Beliefs ---------------------------------------------------------------
+
+  /** Every version of every belief, oldest first. */
+  beliefVersions(): Belief[] {
+    return this.store.list<Belief>("beliefs").sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id) || a.version - b.version);
+  }
+
+  /** Latest version of each belief, including retracted ones. */
+  latestBeliefs(): Belief[] {
+    const latest = new Map<string, Belief>();
+    for (const b of this.beliefVersions()) {
+      const cur = latest.get(b.id);
+      if (!cur || b.version > cur.version) latest.set(b.id, b);
+    }
+    return [...latest.values()];
+  }
+
+  /** The beliefs that currently guide the agent. */
+  beliefs(): Belief[] {
+    return this.latestBeliefs().filter((b) => b.status === "active");
+  }
+
+  /** A belief by "b_x" (latest) or "b_x@2" (exact version). */
+  belief(ref: string): Belief | null {
+    const [id, v] = ref.split("@");
+    if (v) return this.store.get<Belief>("beliefs", ref);
+    return this.latestBeliefs().find((b) => b.id === id) ?? null;
+  }
+
+  /** All versions of one belief, oldest first. */
+  history(id: string): Belief[] {
+    return this.beliefVersions().filter((b) => b.id === id).sort((a, b) => a.version - b.version);
+  }
+
+  /** Episodes that `sleep()` has not processed yet (forgotten ones are skipped). */
+  pendingEpisodes(): Episode[] {
+    return this.episodes().filter((e) => !e.consolidatedAt && !e.forgottenAt);
+  }
+
+  /**
+   * Consolidation: new episodes + current beliefs → belief changes, via the LLM.
+   * Every change is a new immutable belief version with evidence and a reason.
+   */
+  async sleep(opts: SleepOptions): Promise<SleepReport> {
+    const report: SleepReport = { episodes: 0, created: [], revised: [], retracted: [], rejected: [] };
+    const pending = this.pendingEpisodes();
+    const size = opts.batchSize ?? 40;
+    for (let i = 0; i < pending.length; i += size) {
+      const batch = pending.slice(i, i + size);
+      const episodes = batch.flatMap((e) => {
+        const content = this.read(e.id);
+        return content ? [{ id: e.id, content, summary: e.summary }] : [];
+      });
+      const { ops, rejected } = await proposeOps(opts.llm, { episodes, beliefs: this.beliefs(), context: opts.context });
+      report.rejected.push(...rejected);
+      for (const op of ops) {
+        const b = this.applyOp(op);
+        if (op.op === "create") report.created.push(b);
+        else if (op.op === "revise") report.revised.push(b);
+        else report.retracted.push(b);
+      }
+      const now = Date.now();
+      for (const e of batch) this.store.put("episodes", e.id, { ...e, consolidatedAt: now });
+      report.episodes += batch.length;
+    }
+    return report;
+  }
+
+  /** Applies one belief change. Exposed so users (and tests) can edit beliefs by hand. */
+  applyOp(op: BeliefOp): Belief {
+    const now = Date.now();
+    if (op.op === "create") {
+      const taken = new Set(this.latestBeliefs().map((b) => b.id));
+      let id = `b_${op.key}`;
+      for (let n = 2; taken.has(id); n++) id = `b_${op.key}_${n}`;
+      const b: Belief = { id, version: 1, statement: op.statement, confidence: op.confidence, evidence: [...op.evidence].sort(), tags: op.tags, status: "active", createdAt: now, reason: op.reason };
+      this.store.put("beliefs", beliefKey(b), b);
+      return b;
+    }
+    const prev = this.belief(op.belief);
+    if (!prev) throw new Error(`unknown belief ${op.belief}`);
+    const next: Belief =
+      op.op === "revise"
+        ? { id: prev.id, version: prev.version + 1, statement: op.statement, confidence: op.confidence, evidence: [...op.evidence].sort(), tags: op.tags.length ? op.tags : prev.tags, supersedes: beliefKey(prev), status: "active", createdAt: now, reason: op.reason }
+        : { ...prev, version: prev.version + 1, supersedes: beliefKey(prev), status: "retracted", createdAt: now, reason: op.reason, blobId: undefined };
+    this.store.put("beliefs", beliefKey(next), next);
+    return next;
+  }
+
+  /**
+   * Beliefs relevant to a task. Uses Walrus Memory semantic recall over pushed
+   * beliefs, then falls back to keyword matching for anything not pushed yet.
+   */
+  async relevant(query: string, limit = 5): Promise<Belief[]> {
+    const active = new Map(this.beliefs().map((b) => [beliefKey(b), b]));
+    const out: Belief[] = [];
+    try {
+      const hits = await this.remote.search(this.config.namespaces.beliefs, query, limit * 3);
+      for (const h of hits) {
+        const key = parseBeliefText(h.text);
+        const b = key ? active.get(key) : undefined;
+        if (b && !out.includes(b)) out.push(b);
+      }
+    } catch {
+      // remote unavailable — keyword fallback below
+    }
+    if (out.length < limit) {
+      const words = query.toLowerCase().split(/\W+/).filter((w) => w.length > 2);
+      const scored = [...active.values()]
+        .filter((b) => !out.includes(b))
+        .map((b) => ({ b, s: words.filter((w) => `${b.statement} ${b.tags.join(" ")}`.toLowerCase().includes(w)).length }))
+        .filter((x) => x.s > 0)
+        .sort((a, b) => b.s - a.s || b.b.confidence - a.b.confidence);
+      out.push(...scored.map((x) => x.b));
+    }
+    return out.slice(0, limit);
+  }
+
   // ---- Sync ----------------------------------------------------------------
 
   /** Uploads everything not yet on Walrus Memory and records the blob IDs. */
   async push(): Promise<PushResult> {
     const ns = this.config.namespaces;
     const eps = this.episodes().filter((e) => !e.blobId);
-    const items = eps.map((e) => ({ namespace: ns.episodes, text: canonical(e.envelope) }));
+    const bels = this.beliefVersions().filter((b) => !b.blobId);
+    const items = [
+      ...eps.map((e) => ({ namespace: ns.episodes, text: canonical(e.envelope) })),
+      ...bels.map((b) => ({ namespace: ns.beliefs, text: beliefText(b) })),
+    ];
     const blobIds = await this.remote.putMany(items);
     eps.forEach((e, i) => this.store.put("episodes", e.id, { ...e, blobId: blobIds[i] }));
-    return { episodes: eps.length, beliefs: 0, receipts: 0 };
+    bels.forEach((b, i) => this.store.put("beliefs", beliefKey(b), { ...b, blobId: blobIds[eps.length + i] }));
+    return { episodes: eps.length, beliefs: bels.length, receipts: 0 };
+  }
+}
+
+const BELIEF_MARK = "\n\nengram:";
+
+/** How a belief is written to Walrus Memory: readable statement first (for semantic recall), then the full record. */
+export function beliefText(b: Belief): string {
+  return `${b.statement}${BELIEF_MARK}${canonical({ ...b, blobId: undefined })}`;
+}
+
+/** Returns "id@version" from a belief text, or null if it isn't one. */
+export function parseBeliefText(text: string): string | null {
+  const i = text.lastIndexOf(BELIEF_MARK);
+  if (i < 0) return null;
+  try {
+    const b = JSON.parse(text.slice(i + BELIEF_MARK.length)) as Belief;
+    return typeof b.id === "string" && typeof b.version === "number" ? beliefKey(b) : null;
+  } catch {
+    return null;
   }
 }
