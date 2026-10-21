@@ -84,6 +84,8 @@ export interface CommitManifest {
   tombstones: string[];
   /** Episode ID → Walrus blob ID, for every episode referenced by an active belief. */
   episodes: Record<string, string>;
+  /** "id@version" → Walrus blob ID of that belief version. */
+  beliefBlobs: Record<string, string>;
   agentPubKey: string;
 }
 

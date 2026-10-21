@@ -5,7 +5,28 @@ import { KeyVault } from "./vault.js";
 import type { RemoteMemory } from "./remote.js";
 import type { LLM } from "./llm.js";
 import { proposeOps, type BeliefOp } from "./consolidator.js";
-import type { Belief, Envelope, Episode, EpisodeContent, EpisodeSource } from "./types.js";
+import type { Anchorer } from "./anchor.js";
+import { buildCommitTree, commitId } from "./proof.js";
+import type { Belief, Commit, CommitManifest, Envelope, Episode, EpisodeContent, EpisodeSource } from "./types.js";
+
+export class NothingToCommitError extends Error {
+  constructor() {
+    super("nothing to commit — beliefs are unchanged since the last commit");
+  }
+}
+
+export interface BeliefDiff {
+  added: Belief[];
+  /** [before, after] */
+  changed: [Belief, Belief][];
+  removed: Belief[];
+}
+
+export interface BlameEntry {
+  episode: Episode;
+  /** Decrypted content, or null if forgotten. */
+  content: EpisodeContent | null;
+}
 
 /** "b_rent@2" */
 export const beliefKey = (b: Pick<Belief, "id" | "version">) => `${b.id}@${b.version}`;
@@ -38,6 +59,8 @@ export interface OpenOptions {
   /** Folder that contains (or will contain) `.engram/`. Default: cwd. */
   dir?: string;
   remote: RemoteMemory;
+  /** Finds the on-chain anchor for commits. Without one, commits are signed but unanchored. */
+  anchorer?: Anchorer;
 }
 
 export interface ObserveInput {
@@ -59,11 +82,13 @@ export class Engram {
   readonly vault: KeyVault;
   readonly config: EngramConfig;
   readonly remote: RemoteMemory;
+  readonly anchorer?: Anchorer;
   private secretKey: string;
 
-  private constructor(store: LocalStore, remote: RemoteMemory) {
+  private constructor(store: LocalStore, remote: RemoteMemory, anchorer?: Anchorer) {
     this.store = store;
     this.remote = remote;
+    this.anchorer = anchorer;
     const config = store.file<EngramConfig>("config.json").read();
     if (!config) throw new Error(`No Engram repo at ${store.root}. Run \`engram init\` first.`);
     this.config = config;
@@ -93,11 +118,11 @@ export class Engram {
       createdAt: Date.now(),
       namespaces: { episodes: ns("episodes"), beliefs: ns("beliefs"), commits: ns("commits"), receipts: ns("receipts") },
     });
-    return new Engram(store, opts.remote);
+    return new Engram(store, opts.remote, opts.anchorer);
   }
 
   static open(opts: OpenOptions): Engram {
-    return new Engram(new LocalStore(join(resolve(opts.dir ?? "."), ".engram")), opts.remote);
+    return new Engram(new LocalStore(join(resolve(opts.dir ?? "."), ".engram")), opts.remote, opts.anchorer);
   }
 
   get agent(): string {
@@ -274,6 +299,155 @@ export class Engram {
     return out.slice(0, limit);
   }
 
+  // ---- Commits ---------------------------------------------------------------
+
+  /** Current commit ID, or null before the first commit. */
+  head(): string | null {
+    return this.store.readText("HEAD") || null;
+  }
+
+  getCommit(id: string): Commit | null {
+    return this.store.get<Commit>("commits", id);
+  }
+
+  /** IDs of forgotten episodes, sorted. */
+  tombstones(): string[] {
+    return this.episodes().filter((e) => e.forgottenAt).map((e) => e.id).sort();
+  }
+
+  /**
+   * Snapshot of the current beliefs: push pending data, build the Merkle root,
+   * sign the manifest, store it on Walrus Memory and look up its Sui anchor.
+   */
+  async commit(message: string, opts: { allowEmpty?: boolean } = {}): Promise<Commit> {
+    const parent = this.head();
+    const beliefs = this.beliefs().sort((a, b) => beliefKey(a).localeCompare(beliefKey(b)));
+    const tombstones = this.tombstones();
+    const { tree } = buildCommitTree(beliefs, tombstones);
+    const parentCommit = parent ? this.getCommit(parent) : null;
+    if (!opts.allowEmpty && parentCommit && parentCommit.manifest.merkleRoot === tree.root) throw new NothingToCommitError();
+    if (!opts.allowEmpty && !parentCommit && beliefs.length === 0 && tombstones.length === 0) throw new NothingToCommitError();
+
+    await this.push();
+    const pushedBeliefs = beliefs.map((b) => this.belief(beliefKey(b))!);
+    const episodes: Record<string, string> = {};
+    for (const b of pushedBeliefs) {
+      for (const id of b.evidence) {
+        const ep = this.episode(id);
+        if (ep?.blobId) episodes[id] = ep.blobId;
+      }
+    }
+    const manifest: CommitManifest = {
+      engram: "commit",
+      v: 1,
+      agent: this.agent,
+      parent,
+      ts: Date.now(),
+      message,
+      merkleRoot: tree.root,
+      beliefs: pushedBeliefs.map(beliefKey),
+      tombstones,
+      episodes,
+      beliefBlobs: Object.fromEntries(pushedBeliefs.map((b) => [beliefKey(b), b.blobId ?? ""])),
+      agentPubKey: this.publicKey,
+    };
+    const id = commitId(manifest);
+    const signature = this.signRaw(canonical(manifest));
+    const [manifestBlobId] = await this.remote.putMany([{ namespace: this.config.namespaces.commits, text: commitText(id, manifest, signature) }]);
+    const commit: Commit = { id, manifest, signature, manifestBlobId };
+    this.store.put("commits", id, commit);
+    this.store.writeText("HEAD", id);
+    return this.anchor(id);
+  }
+
+  /** Looks up (or retries looking up) the Sui anchor of a commit. */
+  async anchor(id: string): Promise<Commit> {
+    const c = this.getCommit(id);
+    if (!c) throw new Error(`unknown commit ${id}`);
+    if (c.anchor || !this.anchorer || !c.manifestBlobId) return c;
+    const anchor = await this.anchorer.find(c.manifestBlobId);
+    if (!anchor) return c;
+    const next = { ...c, anchor };
+    this.store.put("commits", id, next);
+    return next;
+  }
+
+  /** Commits from HEAD back to the first one. */
+  log(from?: string): Commit[] {
+    const out: Commit[] = [];
+    let id: string | null = from ? this.resolve(from) : this.head();
+    while (id) {
+      const c = this.getCommit(id);
+      if (!c) throw new Error(`broken history: missing commit ${id}`);
+      out.push(c);
+      id = c.manifest.parent;
+    }
+    return out;
+  }
+
+  /**
+   * Resolves "HEAD", "HEAD~2", a full or short (≥4 chars) commit ID, or a
+   * date ("2026-10-25") → the last commit made at or before it.
+   */
+  resolve(ref: string): string {
+    const all = this.log();
+    if (all.length === 0) throw new Error("no commits yet");
+    const m = /^HEAD(?:~(\d+))?$/.exec(ref);
+    if (m) {
+      const c = all[Number(m[1] ?? 0)];
+      if (!c) throw new Error(`${ref} is beyond the first commit`);
+      return c.id;
+    }
+    if (/^[0-9a-f]{4,64}$/.test(ref)) {
+      const hits = all.filter((c) => c.id.startsWith(ref));
+      if (hits.length === 1) return hits[0]!.id;
+      if (hits.length > 1) throw new Error(`ambiguous commit ${ref}`);
+    }
+    const t = Date.parse(ref.length === 10 ? `${ref}T23:59:59.999Z` : ref);
+    if (!Number.isNaN(t)) {
+      const c = all.find((x) => x.manifest.ts <= t);
+      if (!c) throw new Error(`no commit at or before ${ref}`);
+      return c.id;
+    }
+    throw new Error(`unknown commit ${ref}`);
+  }
+
+  /** The beliefs the agent had at a commit — time travel. */
+  beliefsAt(ref: string): Belief[] {
+    const c = this.getCommit(this.resolve(ref))!;
+    return c.manifest.beliefs.map((k) => {
+      const b = this.belief(k);
+      if (!b) throw new Error(`commit ${c.id.slice(0, 8)} references missing belief ${k}`);
+      return b;
+    });
+  }
+
+  /** What changed between two commits (or a commit and the working beliefs when `to` is omitted). */
+  diff(from: string, to?: string): BeliefDiff {
+    const a = new Map(this.beliefsAt(from).map((b) => [b.id, b]));
+    const b = new Map((to ? this.beliefsAt(to) : this.beliefs()).map((x) => [x.id, x]));
+    const out: BeliefDiff = { added: [], changed: [], removed: [] };
+    for (const [id, nb] of b) {
+      const ob = a.get(id);
+      if (!ob) out.added.push(nb);
+      else if (ob.version !== nb.version) out.changed.push([ob, nb]);
+    }
+    for (const [id, ob] of a) if (!b.has(id)) out.removed.push(ob);
+    return out;
+  }
+
+  /** The episodes behind a belief version, decrypted where possible. */
+  blame(ref: string): { belief: Belief; history: Belief[]; evidence: BlameEntry[] } {
+    const belief = this.belief(ref);
+    if (!belief) throw new Error(`unknown belief ${ref}`);
+    const evidence = belief.evidence.map((id) => {
+      const episode = this.episode(id);
+      if (!episode) throw new Error(`belief ${ref} cites missing episode ${id}`);
+      return { episode, content: episode.forgottenAt ? null : this.read(id) };
+    }).sort((a, b) => a.episode.ts - b.episode.ts);
+    return { belief, history: this.history(belief.id).filter((b) => b.version <= belief.version), evidence };
+  }
+
   // ---- Sync ----------------------------------------------------------------
 
   /** Uploads everything not yet on Walrus Memory and records the blob IDs. */
@@ -309,4 +483,9 @@ export function parseBeliefText(text: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** How a commit is written to Walrus Memory. */
+export function commitText(id: string, manifest: CommitManifest, signature: string): string {
+  return `Engram commit ${id} by ${manifest.agent}: ${manifest.message}${BELIEF_MARK}${canonical({ id, manifest, signature })}`;
 }
