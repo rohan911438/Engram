@@ -44,17 +44,17 @@ export function FeatCard({ title, description, children, className = "" }: FeatC
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "group relative flex flex-col gap-2 overflow-hidden rounded-[20px] p-4",
-        "bg-white dark:bg-neutral-900",
+        "card-black bg-black", // Engram: pure black with a lit top edge
         "shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04)]",
-        "dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_0_0_1px_rgba(255,255,255,0.05),0_2px_4px_rgba(0,0,0,0.2)]",
+        "dark:shadow-none transition duration-300 hover:-translate-y-0.5",
         className
       )}
     >
       <div className="z-10 flex flex-col gap-1.5">
-        <h3 className="font-semibold text-foreground text-sm tracking-tight">{title}</h3>
-        <p className="text-muted-foreground text-xs leading-relaxed max-w-[90%]">{description}</p>
+        <h3 className="font-semibold text-white text-[15px] tracking-tight">{title}</h3>
+        <p className="text-white/60 text-[13px] leading-relaxed max-w-[92%]">{description}</p>
       </div>
-      <div className="relative mt-2 flex-1 w-full rounded-[14px] overflow-hidden border border-border/50 bg-background/50 dark:bg-neutral-950/50">
+      <div className="relative mt-2 flex-1 w-full rounded-[14px] overflow-hidden border border-white/[0.06] bg-white/[0.015]">
         {children}
       </div>
     </motion.div>
@@ -212,7 +212,7 @@ export function Card1() {
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden select-none bg-neutral-50 dark:bg-neutral-950/80 rounded-xl flex items-center justify-center p-2">
+    <div className="w-full h-full relative overflow-hidden select-none bg-transparent rounded-xl flex items-center justify-center p-2">
       {/* ── Layer 1: Clean dotted grid ── */}
       <svg className="absolute inset-0 w-full h-full" aria-hidden>
         <defs>

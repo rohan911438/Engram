@@ -3,12 +3,15 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
+@import "@fontsource/instrument-serif/400.css";
+@import "@fontsource/instrument-serif/400-italic.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Geist Variable', sans-serif;
+    --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
     --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -152,7 +155,7 @@
     --secondary: oklch(0.19 0.004 280);
     --secondary-foreground: oklch(0.97 0 0);
     --muted: oklch(0.18 0.003 280);
-    --muted-foreground: oklch(0.64 0.01 280);
+    --muted-foreground: oklch(0.76 0.008 280);
     --accent: oklch(0.2 0.01 285);
     --accent-foreground: oklch(0.97 0 0);
     --destructive: oklch(0.68 0.2 22);
@@ -237,3 +240,38 @@ html, body { background: #000; }
       var(--glow-color-10, #ffcc00), var(--glow-color-1, #669900)) 1;
   animation: glow-angle-rotate var(--glow-animation-duration, 4s) linear infinite;
 }
+
+/* ---- Premium black homepage helpers ---- */
+@layer utilities {
+  /* Bright-to-soft white headline, like light falling on type */
+  .text-headline {
+    background: linear-gradient(180deg, #ffffff 0%, #ffffff 45%, rgba(255,255,255,0.72) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .text-accent {
+    background: linear-gradient(95deg, #e9e4ff 0%, #b9a7ff 35%, #8be9fd 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  /* Hairline that glows in the middle and fades at the ends */
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(167,139,250,0.35) 30%, rgba(103,232,249,0.35) 70%, transparent);
+  }
+  /* Card: pure black body, gradient edge that is lit from the top */
+  .card-black {
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.008) 40%, transparent) , #000;
+    border-radius: 1.25rem;
+  }
+  .card-black::before {
+    content: ""; position: absolute; inset: 0; padding: 1px; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04) 45%, rgba(255,255,255,0.02));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+  }
+  .grain::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: .06; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27180%27 height=%27180%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.85%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E");
+  }
+}
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }

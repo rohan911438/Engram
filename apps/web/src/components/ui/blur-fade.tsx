@@ -33,13 +33,13 @@ export function BlurFade({
   children,
   className,
   variant,
-  duration = 0.4,
+  duration = 0.7,
   delay = 0,
-  offset = 6,
-  direction = "down",
+  offset = 14,
+  direction = "up", // Engram: content rises into place
   inView = false,
   inViewMargin = "-50px",
-  blur = "6px",
+  blur = "10px",
   ...props
 }: BlurFadeProps) {
   const ref = useRef(null)
@@ -79,7 +79,7 @@ export function BlurFade({
         transition={{
           delay: 0.04 + delay,
           duration,
-          ease: "easeOut",
+          ease: [0.16, 1, 0.3, 1],
           ...(shouldTransitionFilter ? { filter: { duration } } : {}),
         }}
         className={className}
