@@ -10,3 +10,4 @@ export { WalrusMemoryRemote, InMemoryRemote, type RemoteMemory, type RemoteHit, 
 export { GeminiLLM, ScriptedLLM, type LLM, type Schema, type GeminiOptions } from "./llm.js";
 export { proposeOps, validateOps, buildPrompt, type BeliefOp, type ConsolidationInput } from "./consolidator.js";
 export * from "./engram.js";
+export { servicesFromEnv, type EnvServices } from "./env.js";

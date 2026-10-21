@@ -50,7 +50,8 @@ const SCHEMA: Schema = {
           tags: { type: "array", items: { type: "string" } },
           reason: { type: "string" },
         },
-        required: ["op", "reason"],
+        // Gemini's schema has no conditionals, so ask for every field; retract ignores the extras.
+        required: ["op", "statement", "confidence", "evidence", "tags", "reason"],
       },
     },
   },
@@ -82,8 +83,31 @@ export function buildPrompt(input: ConsolidationInput): string {
 
 /** Asks the LLM for belief changes and drops anything malformed or ungrounded. */
 export async function proposeOps(llm: LLM, input: ConsolidationInput): Promise<{ ops: BeliefOp[]; rejected: { op: unknown; why: string }[] }> {
-  const raw = await llm.json<{ ops?: RawOp[] }>(SYSTEM, buildPrompt(input), SCHEMA);
-  return validateOps(raw.ops ?? [], input);
+  const prompt = buildPrompt(input);
+  const raw = await llm.json<{ ops?: RawOp[] }>(SYSTEM, prompt, SCHEMA);
+  const first = validateOps(raw.ops ?? [], input);
+  if (first.rejected.length === 0) return first;
+
+  // One repair round: show the model what was rejected and why, keep whatever it fixes.
+  const feedback = first.rejected.map((r) => `- ${r.why}: ${JSON.stringify(r.op)}`).join("\n");
+  const accepted = first.ops.map((o) => JSON.stringify(o)).join("\n") || "(none)";
+  let repaired: { ops?: RawOp[] };
+  try {
+    repaired = await llm.json<{ ops?: RawOp[] }>(
+      SYSTEM,
+      `${prompt}\n\nYour previous answer had operations that were REJECTED:\n${feedback}\n\nThese were ACCEPTED and are already applied — do not repeat them:\n${accepted}\n\nReturn ONLY corrected versions of the rejected operations (with valid episode IDs as evidence), or an empty list if they should be dropped.`,
+      SCHEMA,
+    );
+  } catch {
+    return first;
+  }
+  // Validate repairs against the same input, minus beliefs the first pass already touched.
+  const touched = new Set(first.ops.flatMap((o) => (o.op === "create" ? [] : [o.belief])));
+  const second = validateOps(
+    (repaired.ops ?? []).filter((o) => !o.belief || !touched.has(o.belief)),
+    input,
+  );
+  return { ops: [...first.ops, ...second.ops], rejected: second.rejected };
 }
 
 export function validateOps(rawOps: RawOp[], input: ConsolidationInput): { ops: BeliefOp[]; rejected: { op: unknown; why: string }[] } {

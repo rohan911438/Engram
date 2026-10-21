@@ -1,0 +1,25 @@
+{
+  "name": "@engram/cli",
+  "version": "0.1.0",
+  "description": "engram — git for agent memory",
+  "type": "module",
+  "bin": {
+    "engram": "./dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/main.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@engram/sdk": "workspace:*",
+    "commander": "^15.0.0",
+    "dotenv": "^18.0.8",
+    "picocolors": "^1.1.1"
+  }
+}

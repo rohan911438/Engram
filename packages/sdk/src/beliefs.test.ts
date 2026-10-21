@@ -42,6 +42,18 @@ describe("sleep", () => {
     expect(e.history("b_rent").map((x) => `${x.version}:${x.status}`)).toEqual(["1:active", "2:active", "3:retracted"]);
   });
 
+  it("repairs a rejected suggestion with one follow-up call", async () => {
+    const a = e.observe({ source: "user", data: "rent is 450" });
+    const llm = new ScriptedLLM([
+      { ops: [{ op: "create", key: "rent", statement: "Rent is 450.", confidence: 0.8, reason: "r" }] }, // no evidence
+      { ops: [{ op: "create", key: "rent", statement: "Rent is 450.", confidence: 0.8, evidence: [a.id], reason: "r" }] },
+    ]);
+    const r = await e.sleep({ llm });
+    expect(r.created.map((b) => b.id)).toEqual(["b_rent"]);
+    expect(r.rejected).toEqual([]);
+    expect(llm.calls[1]!.prompt).toContain("REJECTED");
+  });
+
   it("does nothing (and calls no LLM) when there are no new episodes", async () => {
     const llm = new ScriptedLLM([]);
     expect((await e.sleep({ llm })).episodes).toBe(0);
@@ -127,6 +139,18 @@ describe("GeminiLLM", () => {
     const llm = new GeminiLLM({ apiKeys: ["k1", "k2"], fetch: fetchFn });
     expect(await llm.json("s", "p", {})).toEqual({ ops: [] });
     expect(used).toEqual(["k1", "k2"]);
+  });
+
+  it("falls back to the next model when every key gets 503", async () => {
+    const urls: string[] = [];
+    const fetchFn = (async (url: string) => {
+      urls.push(url);
+      return url.includes("/models/main:") ? new Response('{"error":{"message":"high demand"}}', { status: 503 }) : ok({ ops: ["x"] });
+    }) as unknown as typeof fetch;
+    const llm = new GeminiLLM({ apiKeys: ["k1", "k2"], model: "main", fallbackModels: ["backup"], fetch: fetchFn, retryDelayMs: 1 });
+    expect(await llm.json("s", "p", {})).toEqual({ ops: ["x"] });
+    expect(llm.lastModel).toBe("backup");
+    expect(urls.filter((u) => u.includes("/main:"))).toHaveLength(4);
   });
 
   it("fails clearly on a 400", async () => {

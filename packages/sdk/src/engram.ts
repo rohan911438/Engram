@@ -45,8 +45,8 @@ export interface ForgetResult {
 }
 
 export class NothingToCommitError extends Error {
-  constructor() {
-    super("nothing to commit — beliefs are unchanged since the last commit");
+  constructor(first = false) {
+    super(first ? "nothing to commit — no beliefs yet (observe episodes, then run sleep)" : "nothing to commit — beliefs are unchanged since the last commit");
   }
 }
 
@@ -361,7 +361,7 @@ export class Engram {
     const { tree } = buildCommitTree(beliefs, tombstones);
     const parentCommit = parent ? this.getCommit(parent) : null;
     if (!opts.allowEmpty && parentCommit && parentCommit.manifest.merkleRoot === tree.root) throw new NothingToCommitError();
-    if (!opts.allowEmpty && !parentCommit && beliefs.length === 0 && tombstones.length === 0) throw new NothingToCommitError();
+    if (!opts.allowEmpty && !parentCommit && beliefs.length === 0 && tombstones.length === 0) throw new NothingToCommitError(true);
 
     await this.push();
     const pushedBeliefs = beliefs.map((b) => this.belief(beliefKey(b))!);
