@@ -1,0 +1,12 @@
+import 'dotenv/config';
+import { MemWal } from '@mysten-incubation/memwal';
+const ns = 'engram-spike';
+const m = MemWal.create({ key: process.env.MEMWAL_KEY, accountId: process.env.MEMWAL_ACCOUNT_ID, serverUrl: process.env.MEMWAL_SERVER_URL, namespace: ns });
+const t = Date.now();
+console.log('health:', JSON.stringify(await m.health()).slice(0, 120));
+const text = JSON.stringify({ engram: 'spike', ts: t, note: 'Owner pays rent of 450 USDC to 0x7a on the 1st of each month' });
+const r = await m.rememberAndWait(text, ns, { timeoutMs: 180000 });
+console.log('remember:', r, `${((Date.now()-t)/1000).toFixed(1)}s`);
+const rc = await m.recall({ query: 'rent payment', limit: 5, namespace: ns });
+console.log('recall:', rc.results.map(x => ({ blob: x.blob_id, exact: x.text === text, text: x.text.slice(0, 80), d: x.distance, created: x.created_at })));
+console.log('namespaces:', JSON.stringify(await m.listNamespaces()).slice(0, 400));
