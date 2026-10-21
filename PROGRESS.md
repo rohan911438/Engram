@@ -12,8 +12,8 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 | M5 | Receipts, `verify`, `forget` (tombstones) | ✅ done — 43 tests; live receipt verified on Walrus + Sui |
 | M6 | CLI: init, status, observe, sleep, commit, log, diff, checkout, blame, verify, forget | ⏳ in progress |
 | M7 | Money-ops example agent (Tatum wallet feed) | ⬜ |
-| M8 | Inspector UI (built on open-source components) | ⏳ in progress |
-| M9 | `bisect`; paid `share` via MPP (stretch) | ⬜ |
+| M8 | Inspector UI (built on open-source components) | ✅ done — 4 views checked in Chrome; 58 tests total |
+| M9 | `bisect`; paid `share` via MPP (stretch) | ⏳ next |
 | M10 | Mainnet demo data, docs, blog draft, video script | ⬜ |
 
 ## Log
@@ -26,3 +26,4 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 - **21 Oct** — M7: `examples/money-ops` — `WalletFeed` (Sui txs via Tatum → events, coin decimals from chain), `MoneyOpsAgent` (batched decisions via `engram.act` → signed receipt per event), `replay` story and `watch <address>`. Replay (`docs/demo-replay.md`): July 4/4 alerted → Aug–Sep 0/8 → Oct rent rise WARN + theft CRITICAL → Nov scam address caught from memory.
   - **Gemini free tier = 20 requests/day per model**, shared by both keys (same Google project). Fixes: batched decisions (~9 calls per replay instead of ~20), daily-quota detection skips exhausted key/model pairs, Gemma models as last fallback (prompt-only JSON).
   - TODO when quota resets: full replay on real Walrus Memory + Sui for the demo repo.
+- **21 Oct** — M8: Inspector (`engram ui`) — Vite + React + shadcn/ui (Base UI, MIT) + React Flow + Tailwind, custom dark theme. Views: Overview (stats, learning curve, live Verify HEAD), Mind (belief graph + commit timeline slider with play; new/revised beliefs glow), History (commit diffs, Sui tx + Walrus manifest links, verify), Receipts (decisions, beliefs used, live verify). Local read-only API on 127.0.0.1 in the CLI; checked in Chrome against the replay repo. Path-traversal test included.

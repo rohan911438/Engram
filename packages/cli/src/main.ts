@@ -299,4 +299,26 @@ program
     info("run `engram commit` to record the tombstone on Walrus + Sui");
   }));
 
+program
+  .command("ui")
+  .description("open the inspector: belief graph, timeline, receipts, live verification")
+  .option("-p, --port <port>", "port", "4646")
+  .option("--no-open", "don't open a browser")
+  .action(run(async (o: { port: string; open: boolean }) => {
+    const { createUiServer, findInspectorDist } = await import("./ui-server.js");
+    const e = open();
+    const dist = findInspectorDist();
+    const server = createUiServer(e, { staticDir: dist });
+    await new Promise<void>((ok, fail) => server.once("error", fail).listen(Number(o.port), "127.0.0.1", ok));
+    const url = `http://localhost:${o.port}`;
+    ok(`Engram inspector for ${pc.bold(e.agent)} at ${pc.cyan(url)}`);
+    if (!dist) console.log(pc.yellow("! inspector UI not built — serving the API only"));
+    info("press Ctrl+C to stop");
+    if (o.open && dist) {
+      const { exec } = await import("node:child_process");
+      exec(process.platform === "win32" ? `start "" ${url}` : process.platform === "darwin" ? `open ${url}` : `xdg-open ${url}`);
+    }
+    await new Promise(() => {});
+  }));
+
 await program.parseAsync();
