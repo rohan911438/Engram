@@ -123,3 +123,19 @@ describe("forget", () => {
     expect(remote.items).toHaveLength(0);
   });
 });
+
+describe("act", () => {
+  it("passes committed beliefs, keeps only real ones in the receipt, and skips receipts before any commit", async () => {
+    const early = await e.act({ query: "rent", input: 1 }, (bs) => ({ action: "alert", used: [], result: bs.length }));
+    expect(early).toMatchObject({ result: 0, receipt: null });
+    await setup();
+    const r = await e.act({ query: "rent payment", input: { tx: "t1" } }, (bs) => ({
+      action: "no alert: rent",
+      used: ["b_rent", "b_made_up", "b_rent@1"],
+      result: bs.map((b) => b.id).sort(),
+    }));
+    expect(r.result).toEqual(["b_rent", "b_salary"]);
+    expect(r.receipt!.beliefs).toEqual(["b_rent@1"]);
+    expect((await e.verifyReceipt(r.receipt!.id)).ok).toBe(true);
+  });
+});

@@ -21,7 +21,7 @@ export interface GeminiOptions {
   retryDelayMs?: number;
 }
 
-export const DEFAULT_GEMINI_FALLBACKS = ["gemini-3.8-flash", "gemini-flash-lite-latest", "gemini-2.5-flash"];
+export const DEFAULT_GEMINI_FALLBACKS = ["gemini-3.8-flash", "gemini-flash-lite-latest", "gemini-2.5-flash", "gemma-4-26b-a4b-it", "gemma-4-31b-it"];
 
 export class GeminiLLM implements LLM {
   readonly name: string;
@@ -29,6 +29,8 @@ export class GeminiLLM implements LLM {
   lastModel?: string;
   private keys: string[];
   private current = 0;
+  /** "key|model" pairs that hit their daily quota. */
+  private exhausted = new Set<string>();
   private models: string[];
   private temperature: number;
   private baseUrl: string;
@@ -48,15 +50,14 @@ export class GeminiLLM implements LLM {
   }
 
   async json<T>(system: string, prompt: string, schema: Schema): Promise<T> {
-    const body = JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: this.temperature, responseMimeType: "application/json", responseSchema: schema },
-    });
     const errors: string[] = [];
     for (const model of this.models) {
+      const body = requestBody(model, system, prompt, schema, this.temperature);
       // Each model gets two rounds over all keys before moving to the next model.
       for (let attempt = 0; attempt < this.keys.length * 2; attempt++) {
+        const live = this.keys.filter((k) => !this.exhausted.has(`${k}|${model}`));
+        if (live.length === 0) break;
+        if (this.exhausted.has(`${this.keys[this.current]}|${model}`)) this.current = this.keys.indexOf(live[0]!);
         const key = this.keys[this.current]!;
         const r = await this.call(model, key, body);
         if (r.ok) {
@@ -66,6 +67,10 @@ export class GeminiLLM implements LLM {
         errors.push(`${model}: ${r.error}`);
         if (r.fatal) throw new Error(`Gemini ${model}: ${r.error}`);
         if (r.skipModel) break;
+        if (r.dailyLimit) {
+          this.exhausted.add(`${key}|${model}`);
+          continue;
+        }
         if (r.rotate) this.current = (this.current + 1) % this.keys.length;
         await sleep(this.delay * (attempt + 1));
       }
@@ -73,7 +78,7 @@ export class GeminiLLM implements LLM {
     throw new Error(`Gemini failed on all models — last error ${errors[errors.length - 1] ?? "unknown"}`);
   }
 
-  private async call(model: string, key: string, body: string): Promise<{ ok: true; value: unknown } | { ok: false; error: string; rotate?: boolean; fatal?: boolean; skipModel?: boolean }> {
+  private async call(model: string, key: string, body: string): Promise<{ ok: true; value: unknown } | { ok: false; error: string; rotate?: boolean; fatal?: boolean; skipModel?: boolean; dailyLimit?: boolean }> {
     let res: Response;
     try {
       res = await this.fetchFn(`${this.baseUrl}/models/${model}:generateContent`, {
@@ -93,6 +98,8 @@ export class GeminiLLM implements LLM {
         return raw.slice(0, 160);
       }
     };
+    // "PerDay" quota: this key is done with this model until tomorrow.
+    if (res.status === 429 && raw.includes("PerDay")) return { ok: false, error: `HTTP 429 daily quota used up`, dailyLimit: true };
     if (res.status === 429 || res.status === 403) return { ok: false, error: `HTTP ${res.status} ${msg()}`, rotate: true };
     if (res.status === 503 || res.status === 500 || res.status === 502 || res.status === 504) return { ok: false, error: `HTTP ${res.status} ${msg()}`, rotate: true };
     if (res.status === 404) return { ok: false, error: `HTTP 404 ${msg()}`, skipModel: true };
@@ -100,12 +107,47 @@ export class GeminiLLM implements LLM {
     const data = JSON.parse(raw) as GeminiResponse;
     const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
     if (!text) return { ok: false, error: `empty response (${data.candidates?.[0]?.finishReason ?? data.promptFeedback?.blockReason ?? "unknown"})` };
-    try {
-      return { ok: true, value: JSON.parse(text) };
-    } catch {
-      return { ok: false, error: `invalid JSON: ${text.slice(0, 120)}` };
-    }
+    const value = parseJsonLoose(text);
+    return value === undefined ? { ok: false, error: `invalid JSON: ${text.slice(0, 120)}` } : { ok: true, value };
   }
+}
+
+/**
+ * Gemini models get native JSON mode with a schema. Gemma models (open
+ * weights, separate free quota) support neither system instructions nor
+ * schemas, so they get everything in one prompt and we parse the JSON out.
+ */
+function requestBody(model: string, system: string, prompt: string, schema: Schema, temperature: number): string {
+  if (model.startsWith("gemma")) {
+    const text = `${system}\n\n${prompt}\n\nAnswer with ONLY a JSON object matching this JSON schema, no prose, no code fences:\n${JSON.stringify(schema)}`;
+    return JSON.stringify({ contents: [{ role: "user", parts: [{ text }] }], generationConfig: { temperature } });
+  }
+  return JSON.stringify({
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: { temperature, responseMimeType: "application/json", responseSchema: schema },
+  });
+}
+
+/** Parses JSON, also when wrapped in ```json fences or surrounded by text. */
+export function parseJsonLoose(text: string): unknown {
+  const tryParse = (s: string) => {
+    try {
+      return JSON.parse(s) as unknown;
+    } catch {
+      return undefined;
+    }
+  };
+  const direct = tryParse(text.trim());
+  if (direct !== undefined) return direct;
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text);
+  if (fenced) {
+    const v = tryParse(fenced[1]!.trim());
+    if (v !== undefined) return v;
+  }
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  return start >= 0 && end > start ? tryParse(text.slice(start, end + 1)) : undefined;
 }
 
 interface GeminiResponse {

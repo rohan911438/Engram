@@ -158,3 +158,42 @@ describe("GeminiLLM", () => {
     await expect(llm.json("s", "p", {})).rejects.toThrow(/HTTP 400/);
   });
 });
+
+describe("parseJsonLoose", () => {
+  it("handles plain, fenced and embedded JSON", async () => {
+    const { parseJsonLoose } = await import("./llm.js");
+    expect(parseJsonLoose('{"a":1}')).toEqual({ a: 1 });
+    expect(parseJsonLoose('Sure!\n```json\n{"a":2}\n```')).toEqual({ a: 2 });
+    expect(parseJsonLoose('result: {"a":3} done')).toEqual({ a: 3 });
+    expect(parseJsonLoose("no json here")).toBeUndefined();
+  });
+
+  it("sends gemma models a single prompt without JSON mode", async () => {
+    let sent: any;
+    const fetchFn = (async (_u: string, init: RequestInit) => {
+      sent = JSON.parse(init.body as string);
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "```json\n{\"ops\":[]}\n```" }] } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const llm = new GeminiLLM({ apiKeys: ["k"], model: "gemma-4-26b-a4b-it", fetch: fetchFn });
+    expect(await llm.json("SYS", "PROMPT", { type: "object" })).toEqual({ ops: [] });
+    expect(sent.systemInstruction).toBeUndefined();
+    expect(sent.generationConfig.responseSchema).toBeUndefined();
+    expect(sent.contents[0].parts[0].text).toContain("SYS");
+  });
+});
+
+describe("GeminiLLM daily quota", () => {
+  it("skips a key+model pair once its daily quota is used up", async () => {
+    const calls: string[] = [];
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      const key = (init.headers as Record<string, string>)["x-goog-api-key"]!;
+      calls.push(`${key}:${url.includes("/a:") ? "a" : "b"}`);
+      if (url.includes("/a:")) return new Response('{"error":{"details":[{"quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}}', { status: 429 });
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const llm = new GeminiLLM({ apiKeys: ["k1", "k2"], model: "a", fallbackModels: ["b"], fetch: fetchFn, retryDelayMs: 1 });
+    await llm.json("s", "p", {});
+    await llm.json("s", "p", {});
+    expect(calls).toEqual(["k1:a", "k2:a", "k2:b", "k2:b"]);
+  });
+});

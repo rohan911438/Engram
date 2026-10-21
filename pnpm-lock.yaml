@@ -21,6 +21,18 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@22.20.5)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
 
+  examples/money-ops:
+    dependencies:
+      '@engram/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      dotenv:
+        specifier: ^18.0.8
+        version: 18.0.8
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
+
   packages/cli:
     dependencies:
       '@engram/sdk':
@@ -50,6 +62,9 @@ importers:
 
   spikes:
     dependencies:
+      '@engram/sdk':
+        specifier: workspace:*
+        version: link:../packages/sdk
       '@mysten-incubation/memwal':
         specifier: ^0.1.8
         version: 0.1.8(@mysten/seal@1.5.1(@mysten/sui@2.37.0(typescript@5.9.3)))(@mysten/sui@2.37.0(typescript@5.9.3))

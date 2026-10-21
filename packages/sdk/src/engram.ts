@@ -519,6 +519,30 @@ export class Engram {
     return receipt;
   }
 
+  /**
+   * The runtime hook: gives `fn` the committed beliefs relevant to `task`,
+   * then records a signed receipt for what it decided and which beliefs it used.
+   * Before the first commit, `fn` gets no beliefs and no receipt is written.
+   */
+  async act<T>(
+    task: { query: string; input: unknown; limit?: number },
+    fn: (beliefs: Belief[]) => Promise<{ action: string; used: string[]; result: T }> | { action: string; used: string[]; result: T },
+  ): Promise<{ result: T; action: string; receipt: Receipt | null; beliefs: Belief[] }> {
+    const head = this.head();
+    let beliefs: Belief[] = [];
+    if (head) {
+      const committed = new Map(this.beliefsAt(head).map((b) => [b.id, b]));
+      const relevant = (await this.relevant(task.query, task.limit ?? 6)).map((b) => committed.get(b.id)).filter((b): b is Belief => !!b);
+      // Always include committed beliefs that `relevant` missed only if there are few of them.
+      beliefs = committed.size <= (task.limit ?? 6) ? [...committed.values()] : relevant;
+    }
+    const out = await fn(beliefs);
+    const allowed = new Set(beliefs.map((b) => b.id));
+    const used = [...new Set(out.used.map((u) => u.split("@")[0]!))].filter((u) => allowed.has(u));
+    const receipt = head ? this.decide({ action: out.action, input: task.input, beliefs: used }) : null;
+    return { result: out.result, action: out.action, receipt, beliefs };
+  }
+
   receipts(): Receipt[] {
     return this.store.list<Receipt>("receipts").sort((a, b) => a.ts - b.ts);
   }

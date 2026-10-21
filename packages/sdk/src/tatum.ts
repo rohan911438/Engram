@@ -122,7 +122,7 @@ export class TatumSui {
   async transactionsOf(address: string, direction: "from" | "to", limit = 20): Promise<SuiTxDetail[]> {
     const filter = direction === "from" ? { FromAddress: address } : { ToAddress: address };
     const r = await this.rpc<{ data: SuiTxDetail[] }>("suix_queryTransactionBlocks", [
-      { filter, options: { showBalanceChanges: true, showInput: false, showEffects: false } },
+      { filter, options: { showBalanceChanges: true, showInput: true, showEffects: true } },
       null,
       limit,
       true,

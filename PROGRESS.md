@@ -12,7 +12,7 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 | M5 | Receipts, `verify`, `forget` (tombstones) | ✅ done — 43 tests; live receipt verified on Walrus + Sui |
 | M6 | CLI: init, status, observe, sleep, commit, log, diff, checkout, blame, verify, forget | ⏳ in progress |
 | M7 | Money-ops example agent (Tatum wallet feed) | ⬜ |
-| M8 | Inspector UI (built on open-source components) | ⬜ |
+| M8 | Inspector UI (built on open-source components) | ⏳ in progress |
 | M9 | `bisect`; paid `share` via MPP (stretch) | ⬜ |
 | M10 | Mainnet demo data, docs, blog draft, video script | ⬜ |
 
@@ -23,3 +23,6 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 - **21 Oct** — M4: commits (Merkle root over belief leaves + tombstones, Ed25519-signed manifest, hash-chained parents). Manifest stored in Walrus Memory; its Sui `Blob` object + certifying tx found via Tatum → on-chain time. Also `log`, `resolve` (HEAD~n / short id / date), `beliefsAt`, `diff`, `blame`.
   - Manual mode (`rememberManual`) with plaintext bytes returns HTTP 500 — the relayer seems to require Seal-encrypted data, so public plaintext manifests on Walrus aren't possible via Walrus Memory. Stronger anchoring (own Move module with the root in a public event) is planned once a funded Mainnet wallet exists.
 - **21 Oct** — M5: signed decision receipts with Merkle proofs; `verifyReceipt`/`verifyCommit` (signature, proofs, root rebuild, hash chain, manifest recalled from Walrus Memory, Blob object + tx re-read via Tatum). `forget` crypto-shreds the key, retracts/revises dependent beliefs, tombstones the next commit. Live: all checks green; old receipt still verifies after forget. Tamper tests: forged receipt, edited belief, forged proof, fake anchor, missing manifest.
+- **21 Oct** — M7: `examples/money-ops` — `WalletFeed` (Sui txs via Tatum → events, coin decimals from chain), `MoneyOpsAgent` (batched decisions via `engram.act` → signed receipt per event), `replay` story and `watch <address>`. Replay (`docs/demo-replay.md`): July 4/4 alerted → Aug–Sep 0/8 → Oct rent rise WARN + theft CRITICAL → Nov scam address caught from memory.
+  - **Gemini free tier = 20 requests/day per model**, shared by both keys (same Google project). Fixes: batched decisions (~9 calls per replay instead of ~20), daily-quota detection skips exhausted key/model pairs, Gemma models as last fallback (prompt-only JSON).
+  - TODO when quota resets: full replay on real Walrus Memory + Sui for the demo repo.
