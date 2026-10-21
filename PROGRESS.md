@@ -9,8 +9,8 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 | M2 | SDK core: crypto, Merkle, key vault, local store, episodes → Walrus | ✅ done — 19 tests; live push verified on Sui via Tatum |
 | M3 | Consolidator ("sleep") with Gemini + versioned beliefs | ✅ done — 29 tests; live Gemini run revises rent/salary correctly |
 | M4 | Commit engine: Merkle root, Ed25519 signature, manifest on Walrus, anchor lookup via Tatum | ✅ done — 36 tests; live anchor found at checkpoint 336512573 |
-| M5 | Receipts, `verify`, `forget` (tombstones) | ⏳ in progress |
-| M6 | CLI: init, status, observe, sleep, commit, log, diff, checkout, blame, verify, forget | ⬜ |
+| M5 | Receipts, `verify`, `forget` (tombstones) | ✅ done — 43 tests; live receipt verified on Walrus + Sui |
+| M6 | CLI: init, status, observe, sleep, commit, log, diff, checkout, blame, verify, forget | ⏳ in progress |
 | M7 | Money-ops example agent (Tatum wallet feed) | ⬜ |
 | M8 | Inspector UI (built on open-source components) | ⬜ |
 | M9 | `bisect`; paid `share` via MPP (stretch) | ⬜ |
@@ -22,3 +22,4 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 - **21 Oct** — M3: `sleep()` with Gemini (`gemini-flash-latest`, key rotation). Live: 8 wallet episodes → 3 beliefs (rent, payroll, swaps); after rent/raise news → 2 revisions + 1 anomaly belief, 0 rejected ops. Ungrounded LLM output (fake evidence, unknown beliefs) is rejected.
 - **21 Oct** — M4: commits (Merkle root over belief leaves + tombstones, Ed25519-signed manifest, hash-chained parents). Manifest stored in Walrus Memory; its Sui `Blob` object + certifying tx found via Tatum → on-chain time. Also `log`, `resolve` (HEAD~n / short id / date), `beliefsAt`, `diff`, `blame`.
   - Manual mode (`rememberManual`) with plaintext bytes returns HTTP 500 — the relayer seems to require Seal-encrypted data, so public plaintext manifests on Walrus aren't possible via Walrus Memory. Stronger anchoring (own Move module with the root in a public event) is planned once a funded Mainnet wallet exists.
+- **21 Oct** — M5: signed decision receipts with Merkle proofs; `verifyReceipt`/`verifyCommit` (signature, proofs, root rebuild, hash chain, manifest recalled from Walrus Memory, Blob object + tx re-read via Tatum). `forget` crypto-shreds the key, retracts/revises dependent beliefs, tombstones the next commit. Live: all checks green; old receipt still verifies after forget. Tamper tests: forged receipt, edited belief, forged proof, fake anchor, missing manifest.

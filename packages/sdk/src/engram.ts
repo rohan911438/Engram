@@ -6,8 +6,43 @@ import type { RemoteMemory } from "./remote.js";
 import type { LLM } from "./llm.js";
 import { proposeOps, type BeliefOp } from "./consolidator.js";
 import type { Anchorer } from "./anchor.js";
-import { buildCommitTree, commitId } from "./proof.js";
-import type { Belief, Commit, CommitManifest, Envelope, Episode, EpisodeContent, EpisodeSource } from "./types.js";
+import { buildCommitTree, commitId, proofFor, verifyBeliefProof, verifyManifestSignature } from "./proof.js";
+import { verifySignature } from "./crypto.js";
+import type { Belief, Commit, CommitManifest, Envelope, Episode, EpisodeContent, EpisodeSource, Receipt } from "./types.js";
+
+export interface Check {
+  name: string;
+  ok: boolean;
+  detail: string;
+  /** Skipped checks (e.g. no network) don't fail the report but are shown. */
+  skipped?: boolean;
+}
+
+export interface VerifyReport {
+  ok: boolean;
+  checks: Check[];
+}
+
+export interface VerifyOptions {
+  /** Also confirm the manifest on Walrus Memory (network). Default true. */
+  walrus?: boolean;
+  /** Also confirm the anchor on Sui via the anchorer (network). Default true. */
+  chain?: boolean;
+}
+
+export interface DecideInput {
+  action: string;
+  /** What the agent was asked / saw. Only its hash is stored. */
+  input: unknown;
+  /** Beliefs the decision relied on: "b_x" (version in HEAD) or "b_x@2". */
+  beliefs: string[];
+}
+
+export interface ForgetResult {
+  episode: Episode;
+  revised: Belief[];
+  retracted: Belief[];
+}
 
 export class NothingToCommitError extends Error {
   constructor() {
@@ -448,21 +483,194 @@ export class Engram {
     return { belief, history: this.history(belief.id).filter((b) => b.version <= belief.version), evidence };
   }
 
+  // ---- Receipts --------------------------------------------------------------
+
+  /**
+   * Records a signed receipt for a decision: which committed beliefs it used,
+   * with Merkle proofs that they were in the HEAD commit.
+   */
+  decide(input: DecideInput): Receipt {
+    const head = this.head();
+    if (!head) throw new Error("commit before making decisions — receipts point at a commit");
+    const commit = this.getCommit(head)!;
+    const atHead = new Map(this.beliefsAt(head).map((b) => [b.id, b]));
+    const used = input.beliefs.map((ref) => {
+      const b = ref.includes("@") ? this.belief(ref) : atHead.get(ref);
+      if (!b || !commit.manifest.beliefs.includes(beliefKey(b))) throw new Error(`belief ${ref} is not in the HEAD commit — commit first`);
+      return b;
+    });
+    const tree = buildCommitTree(this.beliefsAt(head), commit.manifest.tombstones);
+    const keys = [...new Set(used.map(beliefKey))].sort();
+    const body = {
+      engram: "receipt" as const,
+      v: 1 as const,
+      agent: this.agent,
+      commitId: head,
+      ts: Date.now(),
+      action: input.action,
+      inputHash: sha256Hex(canonical(input.input ?? null)),
+      beliefs: keys,
+      proofs: Object.fromEntries(keys.map((k) => [k, proofFor(tree, k)])),
+      agentPubKey: this.publicKey,
+    };
+    const id = `r_${sha256Hex(canonical(body)).slice(0, 16)}`;
+    const receipt: Receipt = { ...body, id, signature: this.signRaw(canonical({ ...body, id })) };
+    this.store.put("receipts", id, receipt);
+    return receipt;
+  }
+
+  receipts(): Receipt[] {
+    return this.store.list<Receipt>("receipts").sort((a, b) => a.ts - b.ts);
+  }
+
+  receipt(id: string): Receipt | null {
+    if (!/^r_[0-9a-f]+$/.test(id)) return null;
+    if (id.length < 18) {
+      const hits = this.receipts().filter((r) => r.id.startsWith(id));
+      return hits.length === 1 ? hits[0]! : null;
+    }
+    return this.store.get<Receipt>("receipts", id);
+  }
+
+  // ---- Verify ----------------------------------------------------------------
+
+  /**
+   * Checks a commit end to end: ID, signature, Merkle root rebuilt from the
+   * beliefs, the parent chain, the manifest on Walrus Memory, and the Sui anchor.
+   */
+  async verifyCommit(ref: string, opts: VerifyOptions = {}): Promise<VerifyReport> {
+    const checks: Check[] = [];
+    const add = (name: string, ok: boolean, detail: string, skipped = false) => checks.push({ name, ok, detail, skipped });
+    const id = this.resolve(ref);
+    const c = this.getCommit(id)!;
+    const m = c.manifest;
+
+    add("id", commitId(m) === c.id, "sha256 of the manifest matches the commit ID");
+    add("signature", m.agentPubKey === this.publicKey && verifyManifestSignature(m, c.signature), `Ed25519 by agent ${m.agentPubKey.slice(0, 12)}…`);
+
+    let rootOk = false;
+    let rootDetail = "";
+    try {
+      const beliefs = m.beliefs.map((k) => {
+        const b = this.belief(k);
+        if (!b) throw new Error(`missing belief ${k}`);
+        return b;
+      });
+      const root = buildCommitTree(beliefs, m.tombstones).tree.root;
+      rootOk = root === m.merkleRoot;
+      rootDetail = rootOk ? `${m.beliefs.length} beliefs + ${m.tombstones.length} tombstones → root ${m.merkleRoot.slice(0, 12)}…` : "beliefs on disk do not match the committed root (tampered?)";
+    } catch (err) {
+      rootDetail = (err as Error).message;
+    }
+    add("merkle root", rootOk, rootDetail);
+
+    let chainOk = true;
+    let chainDetail = "";
+    let depth = 0;
+    for (let p = m.parent; p; depth++) {
+      const pc = this.getCommit(p);
+      if (!pc || commitId(pc.manifest) !== pc.id || !verifyManifestSignature(pc.manifest, pc.signature)) {
+        chainOk = false;
+        chainDetail = `parent ${p.slice(0, 8)} is missing or invalid`;
+        break;
+      }
+      p = pc.manifest.parent;
+    }
+    add("history", chainOk, chainOk ? `${depth} earlier commit(s), all signed and hash-linked` : chainDetail);
+
+    if (opts.walrus === false) add("walrus", true, "skipped", true);
+    else if (!c.manifestBlobId) add("walrus", false, "manifest was never stored on Walrus");
+    else {
+      try {
+        const hits = await this.remote.search(this.config.namespaces.commits, `Engram commit ${c.id}`, 10);
+        const hit = hits.find((h) => h.blobId === c.manifestBlobId);
+        const ok = !!hit && hit.text === commitText(c.id, m, c.signature);
+        add("walrus", ok, ok ? `manifest recalled from Walrus Memory, blob ${c.manifestBlobId.slice(0, 10)}…` : hit ? "manifest on Walrus differs from local copy" : "manifest not found in Walrus Memory recall");
+      } catch (err) {
+        add("walrus", true, `could not reach Walrus Memory: ${(err as Error).message}`, true);
+      }
+    }
+
+    if (opts.chain === false) add("sui anchor", true, "skipped", true);
+    else if (!this.anchorer) add("sui anchor", true, "no anchorer configured", true);
+    else if (!c.anchor || !c.manifestBlobId) add("sui anchor", false, "commit has no anchor yet (run `engram anchor`)");
+    else {
+      try {
+        const r = await this.anchorer.check(c.anchor, c.manifestBlobId);
+        const timeOk = !r.timestampMs || r.timestampMs >= m.ts - 5 * 60_000;
+        add("sui anchor", r.ok && timeOk, r.ok && !timeOk ? "anchor is older than the commit — impossible" : r.detail);
+        if (r.ok && r.timestampMs) add("anchored at", true, new Date(r.timestampMs).toISOString());
+      } catch (err) {
+        add("sui anchor", true, `could not reach Sui RPC: ${(err as Error).message}`, true);
+      }
+    }
+    return { ok: checks.every((x) => x.ok), checks };
+  }
+
+  /** Checks a receipt: its signature, each belief's Merkle proof, then the commit it points at. */
+  async verifyReceipt(id: string, opts: VerifyOptions = {}): Promise<VerifyReport> {
+    const r = this.receipt(id);
+    if (!r) throw new Error(`unknown receipt ${id}`);
+    const checks: Check[] = [];
+    const { signature, blobId: _b, ...body } = r;
+    checks.push({ name: "receipt signature", ok: r.agentPubKey === this.publicKey && verifySignature(canonical(body), signature, r.agentPubKey), detail: `"${r.action}" signed by the agent` });
+    const c = this.getCommit(r.commitId);
+    if (!c) return { ok: false, checks: [...checks, { name: "commit", ok: false, detail: `receipt points at unknown commit ${r.commitId.slice(0, 8)}` }] };
+    const bad = r.beliefs.filter((k) => {
+      const b = this.belief(k);
+      const proof = r.proofs[k];
+      return !b || !proof || !verifyBeliefProof(b, proof, c.manifest.merkleRoot);
+    });
+    checks.push({ name: "belief proofs", ok: bad.length === 0, detail: bad.length ? `invalid proof for ${bad.join(", ")}` : `${r.beliefs.length} belief(s) proven to be in commit ${c.id.slice(0, 8)}` });
+    checks.push({ name: "timing", ok: r.ts >= c.manifest.ts, detail: "decision made after its commit" });
+    const commitReport = await this.verifyCommit(c.id, opts);
+    checks.push(...commitReport.checks.map((x) => ({ ...x, name: `commit ${x.name}` })));
+    return { ok: checks.every((x) => x.ok), checks };
+  }
+
+  // ---- Forget ----------------------------------------------------------------
+
+  /**
+   * Crypto-shredding: destroys the episode's key so its ciphertext (local and
+   * on Walrus) can never be decrypted again. Beliefs that relied on it lose
+   * that evidence — and are retracted if nothing else supports them. The next
+   * commit records a tombstone.
+   */
+  forget(episodeId: string, reason = "forgotten on request"): ForgetResult {
+    const ep = this.episode(episodeId);
+    if (!ep) throw new Error(`unknown episode ${episodeId}`);
+    if (ep.forgottenAt) throw new Error(`episode ${episodeId} was already forgotten`);
+    this.vault.destroy(ep.keyId);
+    const episode: Episode = { ...ep, forgottenAt: Date.now(), summary: undefined };
+    this.store.put("episodes", ep.id, episode);
+    const out: ForgetResult = { episode, revised: [], retracted: [] };
+    for (const b of this.beliefs().filter((x) => x.evidence.includes(episodeId))) {
+      const rest = b.evidence.filter((x) => x !== episodeId);
+      if (rest.length === 0) out.retracted.push(this.applyOp({ op: "retract", belief: b.id, reason: `${reason}: its only evidence ${episodeId} was forgotten` }));
+      else out.revised.push(this.applyOp({ op: "revise", belief: b.id, statement: b.statement, confidence: b.confidence, evidence: rest, tags: b.tags, reason: `${reason}: evidence ${episodeId} removed` }));
+    }
+    return out;
+  }
+
   // ---- Sync ----------------------------------------------------------------
 
   /** Uploads everything not yet on Walrus Memory and records the blob IDs. */
   async push(): Promise<PushResult> {
     const ns = this.config.namespaces;
-    const eps = this.episodes().filter((e) => !e.blobId);
+    // A forgotten episode that never left this machine doesn't need to.
+    const eps = this.episodes().filter((e) => !e.blobId && !e.forgottenAt);
     const bels = this.beliefVersions().filter((b) => !b.blobId);
+    const recs = this.receipts().filter((r) => !r.blobId);
     const items = [
       ...eps.map((e) => ({ namespace: ns.episodes, text: canonical(e.envelope) })),
       ...bels.map((b) => ({ namespace: ns.beliefs, text: beliefText(b) })),
+      ...recs.map((r) => ({ namespace: ns.receipts, text: receiptText(r) })),
     ];
     const blobIds = await this.remote.putMany(items);
-    eps.forEach((e, i) => this.store.put("episodes", e.id, { ...e, blobId: blobIds[i] }));
+    eps.forEach((e, i) => this.store.put("episodes", e.id, { ...this.episode(e.id)!, blobId: blobIds[i] }));
     bels.forEach((b, i) => this.store.put("beliefs", beliefKey(b), { ...b, blobId: blobIds[eps.length + i] }));
-    return { episodes: eps.length, beliefs: bels.length, receipts: 0 };
+    recs.forEach((r, i) => this.store.put("receipts", r.id, { ...r, blobId: blobIds[eps.length + bels.length + i] }));
+    return { episodes: eps.length, beliefs: bels.length, receipts: recs.length };
   }
 }
 
@@ -488,4 +696,9 @@ export function parseBeliefText(text: string): string | null {
 /** How a commit is written to Walrus Memory. */
 export function commitText(id: string, manifest: CommitManifest, signature: string): string {
   return `Engram commit ${id} by ${manifest.agent}: ${manifest.message}${BELIEF_MARK}${canonical({ id, manifest, signature })}`;
+}
+
+/** How a receipt is written to Walrus Memory. */
+export function receiptText(r: Receipt): string {
+  return `Engram receipt ${r.id} by ${r.agent}: ${r.action}${BELIEF_MARK}${canonical({ ...r, blobId: undefined })}`;
 }
