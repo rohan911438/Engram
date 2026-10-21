@@ -49,9 +49,9 @@ whether to alert. Every decision is a signed receipt. Its behaviour visibly chan
 | November | New rent accepted silently; a payment to the scam address is caught from memory | 1 / 2 |
 
 ```bash
-pnpm --filter @engram/example-money-ops replay              # Walrus Memory + Sui (needs .env)
-pnpm --filter @engram/example-money-ops replay --offline    # in-memory storage, real LLM
-pnpm --filter @engram/example-money-ops watch 0x<address>   # a real wallet, live via Tatum
+pnpm --filter @engram/money-ops replay              # Walrus Memory + Sui (needs .env)
+pnpm --filter @engram/money-ops replay --offline    # in-memory storage, real LLM
+pnpm --filter @engram/money-ops watch 0x<address>   # a real wallet, live via Tatum
 ```
 
 ## Quick start

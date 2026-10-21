@@ -11,3 +11,4 @@ export { GeminiLLM, ScriptedLLM, type LLM, type Schema, type GeminiOptions } fro
 export { proposeOps, validateOps, buildPrompt, type BeliefOp, type ConsolidationInput } from "./consolidator.js";
 export * from "./engram.js";
 export { servicesFromEnv, type EnvServices } from "./env.js";
+export { inspectApi, episodeView, type InspectHandler } from "./inspect.js";

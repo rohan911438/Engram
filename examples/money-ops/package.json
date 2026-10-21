@@ -1,5 +1,5 @@
 {
-  "name": "@engram/example-money-ops",
+  "name": "@engram/money-ops",
   "private": true,
   "version": "0.1.0",
   "description": "Money-ops agent: watches a Sui wallet via Tatum, learns the owner's habits with Engram",
@@ -14,5 +14,8 @@
     "@engram/sdk": "workspace:*",
     "dotenv": "^18.0.8",
     "picocolors": "^1.1.1"
+  },
+  "exports": {
+    ".": "./src/index.ts"
   }
 }

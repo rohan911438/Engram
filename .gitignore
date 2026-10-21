@@ -13,3 +13,6 @@ Idea/
 
 # local demo repos (contain agent keys)
 demo/
+
+# per-wallet agent repos (server)
+data/
