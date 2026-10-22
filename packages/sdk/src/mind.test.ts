@@ -78,3 +78,40 @@ describe("engram() high-level API", () => {
     expect(() => engram({ agent: "other", dir, walrus: "memory", env: {} })).toThrow(/holds agent/);
   });
 });
+
+describe("audit bundle", () => {
+  it("exports and verifies without the repo; catches tampering", async () => {
+    const { exportAudit, verifyAudit } = await import("./audit.js");
+    mind.observe({ source: "user", data: "rent 450" });
+    await mind.sleep();
+    await mind.commit("first");
+    const agent = mind.wrap(async () => ({ ok: true }), { used: () => ["b_rent"], observe: false });
+    await agent(1);
+    mind.forget(mind.core.episodes()[0]!.id);
+    await mind.commit("after forget");
+
+    const bundle = JSON.parse(JSON.stringify(exportAudit(mind.core)));
+    expect(bundle.commits).toHaveLength(2);
+    expect(bundle.receipts).toHaveLength(1);
+    const good = await verifyAudit(bundle);
+    expect(good.ok).toBe(true);
+    expect(good.summary).toMatchObject({ commits: 2, receipts: 1 });
+
+    const editedBelief = structuredClone(bundle);
+    editedBelief.beliefs[0].statement = "Owner pays 45 USDC rent.";
+    const r1 = await verifyAudit(editedBelief);
+    expect(r1.ok).toBe(false);
+    expect(r1.checks.some((c) => /Merkle root|invalid proof/.test(c.detail))).toBe(true);
+
+    const droppedCommit = structuredClone(bundle);
+    droppedCommit.commits.pop();
+    expect((await verifyAudit(droppedCommit)).checks.some((c) => /not in the bundle/.test(c.detail))).toBe(true);
+
+    const forgedReceipt = structuredClone(bundle);
+    forgedReceipt.receipts[0].action = "something else";
+    expect((await verifyAudit(forgedReceipt)).checks.find((c) => c.subject.startsWith("receipt"))?.detail).toMatch(/bad signature/);
+
+    const anchored = await verifyAudit(bundle, { anchorer: mind.core.anchorer });
+    expect(anchored.summary.anchored).toBe(2);
+  });
+});

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Command } from "commander";
 import { config as loadEnv } from "dotenv";
 import pc from "picocolors";
-import { Engram, NothingToCommitError, beliefKey, servicesFromEnv, type Belief, type EpisodeSource, type VerifyReport } from "@engram/sdk";
+import { Engram, NothingToCommitError, beliefKey, exportAudit, servicesFromEnv, verifyAudit, type AuditBundle, type Belief, type EpisodeSource, type VerifyReport } from "@engram/sdk";
 
 const program = new Command();
 program
@@ -341,6 +341,40 @@ program
     for (const [, b] of r.diff.changed) printBelief(b, pc.yellow("  ~ "));
     for (const b of r.diff.removed) printBelief(b, pc.red("  - "));
     info("run `engram blame <belief>` to see which episodes caused it");
+  }));
+
+program
+  .command("export")
+  .description("write an audit bundle: commits, the beliefs they contain, receipts — checkable without this repo")
+  .option("--audit", "audit bundle (the only export format for now)", true)
+  .option("-o, --out <file>", "output file", "engram-audit.json")
+  .option("--no-receipts", "leave decision receipts out")
+  .action(run((o: { out: string; receipts: boolean }) => {
+    const e = open();
+    if (!e.head()) throw new Error("nothing to export — commit first");
+    const bundle = exportAudit(e, { receipts: o.receipts });
+    writeFileSync(o.out, JSON.stringify(bundle, null, 2));
+    ok(`audit bundle → ${pc.cyan(o.out)}  (${bundle.commits.length} commits, ${bundle.beliefs.length} belief versions, ${bundle.receipts.length} receipts)`);
+    info("raw episodes are not included — they stay encrypted. Check it anywhere with: engram audit " + o.out);
+  }));
+
+program
+  .command("audit <file>")
+  .description("verify an audit bundle from scratch: signatures, hash chain, Merkle roots, receipt proofs, Sui anchors")
+  .option("--offline", "skip re-reading the Sui anchors")
+  .action(run(async (file: string, o: { offline?: boolean }) => {
+    const bundle = JSON.parse(readFileSync(file, "utf8")) as AuditBundle;
+    const anchorer = o.offline ? undefined : services().anchorer;
+    console.log(pc.bold(`audit of ${bundle.agent}`) + pc.dim(` — key ${bundle.agentPubKey.slice(0, 12)}…, exported ${when(bundle.exportedAt)}`));
+    const r = await verifyAudit(bundle, { anchorer });
+    for (const c of r.checks) {
+      const mark = c.skipped ? pc.dim("–") : c.ok ? pc.green("✔") : pc.red("✘");
+      console.log(`  ${mark} ${c.subject.padEnd(30)} ${c.skipped ? pc.dim(c.detail) : c.detail}`);
+    }
+    if (!anchorer) info("  (Sui anchors not checked)");
+    const tail = `${r.summary.commits} commits, ${r.summary.receipts} receipts${anchorer ? `, ${r.summary.anchored} anchors re-read on Sui` : ""}`;
+    console.log(r.ok ? `\n${pc.green(pc.bold("VALID"))}${pc.dim(` — ${tail}`)}` : `\n${pc.red(pc.bold("INVALID"))}`);
+    if (!r.ok) process.exitCode = 1;
   }));
 
 program
