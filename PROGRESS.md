@@ -10,11 +10,11 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 | M3 | Consolidator ("sleep") with Gemini + versioned beliefs | ✅ done — 29 tests; live Gemini run revises rent/salary correctly |
 | M4 | Commit engine: Merkle root, Ed25519 signature, manifest on Walrus, anchor lookup via Tatum | ✅ done — 36 tests; live anchor found at checkpoint 336512573 |
 | M5 | Receipts, `verify`, `forget` (tombstones) | ✅ done — 43 tests; live receipt verified on Walrus + Sui |
-| M6 | CLI: init, status, observe, sleep, commit, log, diff, checkout, blame, verify, forget | ⏳ in progress |
-| M7 | Money-ops example agent (Tatum wallet feed) | ⬜ |
+| M6 | CLI: init, status, observe, sleep, commit, log, diff, checkout, blame, verify, forget | ✅ done |
+| M7 | Money-ops example agent (Tatum wallet feed) | ✅ done |
 | M8 | Inspector UI (built on open-source components) | ✅ done — 4 views checked in Chrome; 58 tests total |
 | M9 | `bisect`; paid `share` via MPP (stretch) | 🟡 bisect done; paid share blocked on funded wallet |
-| M10 | Mainnet demo data, docs, blog draft, video script | ⬜ |
+| M10 | Mainnet demo data, docs, blog draft, video script | 🟡 docs, blog draft, video script done; Mainnet anchor publish + deploy waiting on user |
 
 ## Log
 - **21 Oct** — M1: Walrus Memory write/recall works (blob IDs returned, ~27 s/write). Each memory = Sui `Blob` object readable via Tatum. Tatum has no Sui Testnet.
@@ -31,7 +31,6 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
   - Paid `share` (MPP on Sui) needs: valid wallet phrase in `.env`, a little SUI + USDC on Mainnet.
 
 ## Waiting on the user
-- Fix `SUI_MNEMONIC` in `.env` (13 words — one is a typo).
 - Gemini quota resets daily (20 requests/model/day on the free tier). More keys from **different Google Cloud projects**, or enabling billing, would remove this limit.
 - ~$5 of SUI (+ a few USDC for the payments award) on the wallet before 7 Nov.
 - **21 Oct** — M9b: `contracts/engram_anchor` (Move: emits `Anchored{commit_id, merkle_root, agent_pubkey, parent, manifest_blob}`), `MoveAnchorer` signs with the wallet and sends through Tatum, `verify` re-reads the event via Tatum and compares root/commit/agent. Enabled by `ENGRAM_ANCHOR_PACKAGE` in `.env`. Gemini: 2 more keys added (4 total).
@@ -47,3 +46,18 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 3. Deploy (server + web) so judges get a public URL.
 4. Fix `SUI_MNEMONIC` (13 words), install Sui CLI, publish `engram_anchor`, set `ENGRAM_ANCHOR_PACKAGE`.
 5. Stretch: paid `share` via MPP on Sui. Then docs, blog draft, demo video script.
+
+## Day 2 (22 Oct)
+- **Anchor contract on Testnet:** `engram_anchor` published, package `0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b` (`packages/sdk/scripts/publish-anchor.ts`). `MoveAnchorer` works on testnet (public Sui gRPC) or mainnet (Tatum). Live: commit anchored, verify green, tampered root rejected.
+- **Tatum moved to gRPC.** Sui switched JSON-RPC off (July 2026), and Tatum's JSON-RPC gateway now fails every call ("No healthy upstream"). `TatumSui` now uses `sui-mainnet-grpc.gateway.tatum.io` with a native gRPC transport (Tatum doesn't serve gRPC-Web). Wallet feed uses one `affectedAddress` query.
+- **Walrus Memory outage** (relayer embedder 401, MemWal#1285): added manual-mode fallback — Gemini embeddings + Seal encryption with the owner key; recall merges both paths. Live commit → Walrus → anchor → verify all green.
+- **Web e2e** (`apps/server/scripts/e2e.ts`): real wallet signature → tell → run (sync, learn, commit) → verify HEAD — passes. Run no longer aborts when the wallet sync fails.
+- **Deploy prep:** `Dockerfile` (tested locally: homepage, stats, demo verify). Explorer links follow the anchor's network.
+- **Docs:** README (gRPC, fallback, Move anchoring), `docs/blog-post.md`, `docs/video-script.md`.
+- Tests: SDK 54 · CLI 4 · money-ops 5 · server 7 — all green.
+
+## Next (day 3)
+1. Deploy: Railway (login expired — user runs `railway login`) or another Docker host; set env vars + a volume at `/data`.
+2. Mainnet: fresh wallet (phrase never in chat) with ~$5 SUI → `publish-anchor.ts mainnet` → `ENGRAM_ANCHOR_NETWORK=mainnet`.
+3. Re-run the money-ops replay on Mainnet for the final demo data (10+ real memories).
+4. Stretch: paid `share` via MPP.

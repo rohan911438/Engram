@@ -2,7 +2,7 @@
 
 **Git for agent memory.** Engram gives AI agents memory that *learns*, has *history*, can be
 *proven*, and can be *forgotten* — built on [Walrus Memory](https://docs.wal.app/walrus-memory/getting-started/what-is-walrus-memory.md),
-with every snapshot anchored on Sui and verified through [Tatum](https://tatum.io)'s Sui RPC.
+with every snapshot anchored on Sui and verified through [Tatum](https://tatum.io)'s Sui gRPC gateway.
 
 > Built for the Tatum × Walrus **Total Recall** hackathon (Track 02 — Smart Agents).
 
@@ -137,6 +137,14 @@ mind.forget("ep_…");                               // provable forgetting
   Publish your own copy with `npx tsx packages/sdk/scripts/publish-anchor.ts testnet|mainnet`
   (needs the `sui` CLI for the build and `SUI_MNEMONIC` with a little SUI). Testnet package:
   `0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b`.
+- **Tatum over gRPC:** Sui switched JSON-RPC off in July 2026, so every chain read (wallet feed,
+  Walrus Blob objects, anchor events) and every mainnet anchor transaction goes through Tatum's
+  Sui gRPC gateway (`sui-mainnet-grpc.gateway.tatum.io`) with native gRPC. The wallet feed uses one
+  `affectedAddress` query, so it sees money sent *and* received.
+- **Walrus Memory fallback:** if the relayer's server-side embedding fails (as it did on 22 Oct,
+  [MemWal#1285](https://github.com/MystenLabs/MemWal/issues/1285)), Engram switches to Walrus Memory's
+  manual mode: it embeds locally (Gemini, 1536 dims), Seal-encrypts with the account owner's key,
+  and the relayer only stores ciphertext + vector. Recall merges both paths, so `verify` keeps working.
 - **Consolidation safety:** LLM output is validated — evidence must be real episode IDs, edits must
   target existing beliefs; rejected proposals get one repair round with the reason.
 - **Crypto-shredding:** episode keys are wrapped by a master key in `.engram/vault.json`;
