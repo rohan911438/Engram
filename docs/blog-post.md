@@ -46,16 +46,19 @@ every `verify` call go through Tatum's Sui gateway. When Sui switched JSON-RPC o
 moved everything to Tatum's gRPC endpoint. One `affectedAddress` query now returns every
 transaction that touched a wallet, sent or received.
 
-## The demo: an agent that learns your money habits
+## The demo: an agent that learns your money habits, from real transactions
 
-`money-ops` watches a Sui wallet through Tatum and decides whether each movement deserves an alert.
+`money-ops` watches a Sui wallet and decides whether each movement deserves an alert. For the
+demo we didn't script the agent's input. We created five wallets (owner, employer, landlord,
+streaming service, scammer) and sent real SUI between them. The agent only sees the owner's
+wallet, read from the chain through Tatum like any other wallet.
 
-| Month | What happens | Alerts |
+| Phase | On chain | Agent |
 |---|---|---|
-| July | It knows nothing, so it asks about everything. The owner explains rent, salary, a subscription and a monthly swap | 4 / 4 |
-| Aug–Sep | Same habits, so it stays quiet, and each receipt cites the belief behind the decision | **0 / 8** |
-| October | Rent goes up (warning). 1,800 USDC leaves at 3 a.m. to an unknown address (critical). The owner says it was a scam | 2 / 2 |
-| November | The new rent is accepted silently. A payment to the scam address is caught from memory | 1 / 2 |
+| Month 1 | Salary in, rent and subscription out; the owner explains | Alerts on all 3, then learns 3 beliefs |
+| Months 2–3 | The same transfers twice more | **Quiet on all 6**, each receipt citing the belief it used |
+| Month 4 | Rent rises; 0.18 SUI leaves to an unknown address; the owner says it's a scammer | Revises the rent belief, learns the scam address |
+| Month 5 | New rent; another payment to the scammer | Quiet on the rent, catches the scammer from memory |
 
 You can watch this happen in the web app's **Mind** view. A time slider replays the agent's
 beliefs commit by commit, and new or revised beliefs glow as they appear.
@@ -69,6 +72,8 @@ beliefs commit by commit, and new or revised beliefs glow as they appear.
   Rather than wait, Engram now falls back to Walrus Memory's manual mode. It embeds locally,
   Seal-encrypts with the owner's key, and the relayer only stores ciphertext. Reads merge both
   paths, so verification never noticed.
+- **The relayer rate-limits each key** (60 requests a minute). Engram waits out 429s using the
+  relayer's own `retry_after_seconds`.
 - **LLM free tiers are small.** Decisions are batched, quota errors rotate keys and models, and a
   failed wallet sync no longer stops the agent learning from what it was told.
 
