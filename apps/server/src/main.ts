@@ -9,7 +9,7 @@ const root = resolve(import.meta.dirname, "../../..");
 config({ path: process.env.ENGRAM_ENV ?? join(root, ".env"), quiet: true });
 
 const s = servicesFromEnv();
-const services = { remote: s.remote, anchorer: s.anchorer, tatum: s.tatum, llm: () => s.llm() };
+const services = { remote: s.remote, anchorer: s.anchorer, tatum: s.tatum, llm: () => s.llm(), remoteFor: s.remoteFor };
 const dataDir = resolve(process.env.ENGRAM_DATA ?? join(root, "data"));
 const demoDir = resolve(process.env.ENGRAM_DEMO_DIR ?? join(root, "demo", "money-ops"));
 const staticDir = [process.env.ENGRAM_WEB_DIST, join(root, "apps", "web", "dist")].find((d) => d && existsSync(join(d, "index.html"))) ?? null;

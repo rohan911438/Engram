@@ -115,7 +115,19 @@ export const api = {
   jobs: () => get<{ current: Job | null; recent: Job[] }>("jobs"),
   tell: (message: string) => post<{ episode: { id: string } }>("tell", { message }),
   forget: (episode: string) => post<{ retracted: string[]; revised: string[] }>("forget", { episode }),
+  storage: () => get<StorageStatus>("storage"),
+  storageTx: (step: "create-account" | "authorize-key") => post<{ bytes: string }>("storage/tx", { step }),
+  storageExecute: (bytes: string, signature: string) => post<{ digest: string; status: StorageStatus }>("storage/execute", { bytes, signature }),
+  storageUse: (mode: "own" | "hosted") => post<StorageStatus>("storage/use", { mode }),
 };
+
+export interface StorageStatus {
+  mode: "hosted" | "own";
+  accountId: string | null;
+  delegate: { publicKey: string; suiAddress: string };
+  delegateAuthorized: boolean;
+  next: "create-account" | "authorize-key" | "switch" | "done";
+}
 
 /** Server-level calls (not tied to an agent). */
 export const server = {

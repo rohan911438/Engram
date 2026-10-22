@@ -185,3 +185,30 @@ export class InMemoryRemote implements RemoteMemory {
       .slice(0, limit);
   }
 }
+
+/**
+ * Writes go to `primary`; searches merge `primary` and `secondary`. Used when an
+ * agent moves to its owner's own Walrus Memory account: older memories stay
+ * readable (and verifiable) in the account they were written to.
+ */
+export class CombinedRemote implements RemoteMemory {
+  constructor(
+    readonly primary: RemoteMemory,
+    readonly secondary: RemoteMemory,
+  ) {}
+
+  putMany(items: { namespace: string; text: string }[]): Promise<string[]> {
+    return this.primary.putMany(items);
+  }
+
+  async search(namespace: string, query: string, limit = 10): Promise<RemoteHit[]> {
+    const [a, b] = await Promise.allSettled([this.primary.search(namespace, query, limit), this.secondary.search(namespace, query, limit)]);
+    if (a.status === "rejected" && b.status === "rejected") throw a.reason;
+    const merged = new Map<string, RemoteHit>();
+    for (const h of [...(a.status === "fulfilled" ? a.value : []), ...(b.status === "fulfilled" ? b.value : [])]) {
+      const prev = merged.get(h.blobId);
+      if (!prev || h.distance < prev.distance) merged.set(h.blobId, h);
+    }
+    return [...merged.values()].sort((x, y) => x.distance - y.distance).slice(0, limit);
+  }
+}

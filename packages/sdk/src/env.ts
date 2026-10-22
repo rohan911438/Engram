@@ -22,6 +22,11 @@ export interface EnvServices {
   anchorWarning?: string;
   /** Throws a helpful error if no LLM key is configured. */
   llm(): LLM;
+  /**
+   * Walrus Memory for someone else's account, written with a delegate key they
+   * authorized (suiprivkey1…). The same key does manual-mode Seal decryption.
+   */
+  remoteFor(accountId: string, delegateSecret: string): RemoteMemory;
 }
 
 export function servicesFromEnv(env: Record<string, string | undefined> = process.env): EnvServices {
@@ -46,6 +51,9 @@ export function servicesFromEnv(env: Record<string, string | undefined> = proces
     tatum,
     anchorer,
     anchorWarning,
+    remoteFor(id: string, delegateSecret: string) {
+      return new WalrusMemoryRemote({ key: delegateSecret, accountId: id, serverUrl: env.MEMWAL_SERVER_URL, manual: manualMode(env, delegateSecret) });
+    },
     llm() {
       const keys = (env.GEMINI_API_KEYS ?? env.GEMINI_API_KEY ?? "").split(",").filter(Boolean);
       if (keys.length === 0) throw new Error("No LLM configured: set GEMINI_API_KEYS in .env");
@@ -71,12 +79,12 @@ class LazyRemote implements RemoteMemory {
 }
 
 /** Manual-mode settings for Walrus Memory, if the wallet and an embedder are available. */
-function manualMode(env: Record<string, string | undefined>): ManualModeConfig | undefined {
+function manualMode(env: Record<string, string | undefined>, secret?: string): ManualModeConfig | undefined {
   if (env.MEMWAL_MANUAL === "off") return undefined;
   const keys = (env.GEMINI_API_KEYS ?? env.GEMINI_API_KEY ?? "").split(",").filter(Boolean);
-  if (!env.SUI_MNEMONIC || keys.length === 0) return undefined;
+  if ((!secret && !env.SUI_MNEMONIC) || keys.length === 0) return undefined;
   try {
-    const kp = Ed25519Keypair.deriveKeypair(env.SUI_MNEMONIC.trim());
+    const kp = secret ? Ed25519Keypair.fromSecretKey(secret) : Ed25519Keypair.deriveKeypair(env.SUI_MNEMONIC!.trim());
     return {
       suiPrivateKey: kp.getSecretKey(),
       embed: geminiEmbedder(keys),

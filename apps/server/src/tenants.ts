@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { Engram, NothingToCommitError, type Anchorer, type LLM, type RemoteMemory, type TatumSui } from "@engram/sdk";
+import { CombinedRemote, Engram, NothingToCommitError, delegateFromSecret, newDelegateKey, type Anchorer, type LLM, type RemoteMemory, type TatumSui } from "@engram/sdk";
 import { CONTEXT, MoneyOpsAgent, WalletFeed, describe, type Handled } from "@engram/money-ops";
 
 export interface Services {
@@ -8,6 +8,19 @@ export interface Services {
   anchorer?: Anchorer;
   tatum?: TatumSui;
   llm: () => LLM;
+  /** Walrus Memory for the wallet owner's own account, via the delegate key they authorized. */
+  remoteFor?: (accountId: string, delegateSecret: string) => RemoteMemory;
+}
+
+/** Where a wallet's agent stores its memory. */
+export interface StorageState {
+  /** "own" = the wallet owner's Walrus Memory account; "hosted" = Engram's shared account. */
+  mode: "hosted" | "own";
+  /** Server-held delegate key (suiprivkey1…) the owner authorizes on their account. */
+  delegateSecret: string;
+  accountId?: string;
+  /** When the agent switched to its own account. */
+  since?: number;
 }
 
 export interface Job {
@@ -26,8 +39,8 @@ export interface Job {
  * Tatum wallet feed and the jobs it has run. Only one job runs at a time.
  */
 export class Tenant {
-  readonly engram: Engram;
-  readonly agent: MoneyOpsAgent | null;
+  engram!: Engram;
+  agent: MoneyOpsAgent | null = null;
   readonly feed: WalletFeed | null;
   private jobs: Job[] = [];
   private statePath: string;
@@ -39,11 +52,49 @@ export class Tenant {
     readonly readOnly = false,
   ) {
     mkdirSync(dir, { recursive: true });
-    const opts = { dir, remote: services.remote, anchorer: services.anchorer };
-    this.engram = existsSync(join(dir, ".engram", "config.json")) ? Engram.open(opts) : Engram.init(agentName(address), opts);
     this.statePath = join(dir, "feed-state.json");
-    this.agent = readOnly ? null : new MoneyOpsAgent(this.engram, lazyLlm(services.llm));
+    this.storagePath = join(dir, "storage.json");
+    this.open();
     this.feed = readOnly || !services.tatum ? null : new WalletFeed(services.tatum, address);
+  }
+
+  private storagePath: string;
+
+  /** (Re)opens the Engram repo with the remote that matches the storage setting. */
+  private open() {
+    const opts = { dir: this.dir, remote: this.remote(), anchorer: this.services.anchorer };
+    this.engram = existsSync(join(this.dir, ".engram", "config.json")) ? Engram.open(opts) : Engram.init(agentName(this.address), opts);
+    this.agent = this.readOnly ? null : new MoneyOpsAgent(this.engram, lazyLlm(this.services.llm));
+  }
+
+  private remote(): RemoteMemory {
+    const s = this.readOnly ? null : this.storageState();
+    if (s?.mode === "own" && s.accountId && this.services.remoteFor) {
+      // New memories go to the owner's account; older ones stay readable where they were written.
+      return new CombinedRemote(this.services.remoteFor(s.accountId, s.delegateSecret), this.services.remote);
+    }
+    return this.services.remote;
+  }
+
+  /** Storage settings, creating this agent's delegate key the first time. */
+  storageState(): StorageState {
+    if (existsSync(this.storagePath)) return JSON.parse(readFileSync(this.storagePath, "utf8")) as StorageState;
+    const s: StorageState = { mode: "hosted", delegateSecret: newDelegateKey().secret };
+    writeFileSync(this.storagePath, JSON.stringify(s, null, 2), { mode: 0o600 });
+    return s;
+  }
+
+  delegate(): { publicKey: string; suiAddress: string } {
+    return delegateFromSecret(this.storageState().delegateSecret);
+  }
+
+  /** Switches where new memories are written. Waits for any running job. */
+  useStorage(mode: StorageState["mode"], accountId?: string) {
+    if (this.current) throw new Error("wait for the running job to finish");
+    const s = this.storageState();
+    const next: StorageState = mode === "own" ? { ...s, mode, accountId, since: Date.now() } : { ...s, mode: "hosted" };
+    writeFileSync(this.storagePath, JSON.stringify(next, null, 2), { mode: 0o600 });
+    this.open();
   }
 
   get current(): Job | undefined {

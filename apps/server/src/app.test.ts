@@ -11,7 +11,35 @@ import { Tenant, Tenants, agentName } from "./tenants.js";
 let dir: string;
 let base: string;
 let stop: () => void;
-const services = { remote: new InMemoryRemote(), anchorer: new FakeAnchorer(), llm: () => new ScriptedLLM([{ ops: [] }]) };
+const ownRemote = new InMemoryRemote();
+const services = { remote: new InMemoryRemote(), anchorer: new FakeAnchorer(), llm: () => new ScriptedLLM([{ ops: [] }]), remoteFor: () => ownRemote };
+
+// In-memory stand-in for the Walrus Memory registry on Sui.
+const accounts = new Map<string, { id: string; owner: string; delegates: string[] }>();
+const norm = (a: string) => `0x${a.replace(/^0x/, "").toLowerCase().padStart(64, "0")}`;
+const pending = new Map<string, () => void>();
+const chain = {
+  find: async (owner: string) => accounts.get(norm(owner))?.id ?? null,
+  read: async (id: string) => {
+    const a = [...accounts.values()].find((x) => x.id === id)!;
+    return { accountId: id, owner: a.owner, delegates: a.delegates.map((publicKey) => ({ publicKey, suiAddress: "0x0", label: "" })) };
+  },
+  buildCreate: async (sender: string) => {
+    const bytes = Buffer.from(`create:${sender}`).toString("base64");
+    pending.set(bytes, () => accounts.set(norm(sender), { id: `0xacc${accounts.size}`, owner: norm(sender), delegates: [] }));
+    return bytes;
+  },
+  buildDelegate: async (sender: string, _id: string, pk: string) => {
+    const bytes = Buffer.from(`delegate:${sender}:${pk}`).toString("base64");
+    pending.set(bytes, () => accounts.get(norm(sender))!.delegates.push(pk));
+    return bytes;
+  },
+  execute: async (bytes: string, signature: string) => {
+    if (!signature) throw new Error("unsigned");
+    pending.get(bytes)!();
+    return "DIGEST";
+  },
+};
 
 beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), "engram-server-"));
@@ -21,7 +49,7 @@ beforeAll(async () => {
   const ep = e.observe({ source: "user", data: "hi" });
   e.applyOp({ op: "create", key: "x", statement: "X.", confidence: 0.8, evidence: [ep.id], tags: ["x"], reason: "t" });
   await e.commit("demo");
-  const server = createApp({ tenants: new Tenants(join(dir, "data"), services), demo: new Tenant("demo", demoDir, services, true), staticDir: null });
+  const server = createApp({ tenants: new Tenants(join(dir, "data"), services), demo: new Tenant("demo", demoDir, services, true), staticDir: null, storageChain: chain });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   stop = () => server.close();
@@ -108,6 +136,32 @@ describe("agents", () => {
     }
     expect(job.status).toBe("done");
     expect(job.result.episodes).toBe(1);
+  });
+
+  it("moves an agent to the owner's own Walrus Memory account", async () => {
+    const kp = new Ed25519Keypair();
+    const c = (await signIn(kp)).res.setCookie!.split(";")[0]!;
+    let st = (await call("/api/me/storage", { cookie: c })).body;
+    expect(st).toMatchObject({ mode: "hosted", accountId: null, next: "create-account" });
+    // switching before setup is refused
+    expect((await call("/api/me/storage/use", { json: { mode: "own" }, cookie: c })).status).toBe(400);
+    for (const step of ["create-account", "authorize-key"]) {
+      const { bytes } = (await call("/api/me/storage/tx", { json: { step }, cookie: c })).body;
+      expect((await call("/api/me/storage/execute", { json: { bytes, signature: "sig" }, cookie: c })).status).toBe(200);
+    }
+    st = (await call("/api/me/storage", { cookie: c })).body;
+    expect(st).toMatchObject({ delegateAuthorized: true, next: "switch" });
+    st = (await call("/api/me/storage/use", { json: { mode: "own" }, cookie: c })).body;
+    expect(st.next).toBe("done");
+    // new memories now land in the owner's account (same agent dir, reopened)
+    const t = new Tenant(kp.toSuiAddress(), join(dir, "data", "wallets", kp.toSuiAddress()), services);
+    const ep = t.engram.observe({ source: "user", data: "My rent is 450 USDC" });
+    t.engram.applyOp({ op: "create", key: "rent", statement: "Rent is 450 USDC.", confidence: 0.9, evidence: [ep.id], tags: ["rent"], reason: "t" });
+    const before = ownRemote.items.length;
+    await t.engram.commit("own storage");
+    expect(ownRemote.items.length).toBeGreaterThan(before);
+    // demo stays read-only
+    expect((await call("/api/demo/storage")).status).toBe(403);
   });
 
   it("public stats count agents", async () => {

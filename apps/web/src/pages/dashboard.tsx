@@ -5,6 +5,7 @@ import { BorderBeam } from "@/components/ui/border-beam";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { Confidence, ErrorNote, Hash } from "@/components/engram/bits";
 import { VerifyPanel } from "@/components/engram/verify-panel";
+import { StorageCard } from "@/components/engram/storage-card";
 import { api, ago, fmtTime, links, prettyStatement, tagColor, type Job, type JobKind, type Summary } from "@/lib/api";
 import { useApi } from "@/lib/use-api";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ export function DashboardPage() {
         </div>
       </div>
       <Beliefs key={`b${nonce}`} onOpen={ctx.openBelief} />
+      {!ctx.readOnly && ctx.source === "me" && <StorageCard />}
       {s.head && (
         <section className="rounded-2xl border border-white/[0.07] bg-[#08080b] p-5">
           <Title icon={FileCheck2} text="Verify current memory" hint="signature · Merkle · Walrus · Sui" />

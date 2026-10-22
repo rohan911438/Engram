@@ -4,6 +4,7 @@ import { extname, join, normalize, resolve } from "node:path";
 import { inspectApi, type TatumSui } from "@engram/sdk";
 import { WalletAuth } from "./auth.js";
 import type { Tenant, Tenants } from "./tenants.js";
+import { mainnetStorageChain, storageStatus, storageTx, useOwnStorage, type StorageChain } from "./storage.js";
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -26,6 +27,8 @@ export interface AppOptions {
   staticDir: string | null;
   /** Set the cookie's Secure flag (HTTPS deployments). */
   secureCookies?: boolean;
+  /** Chain access for "use my own Walrus storage" (default: Sui Mainnet over gRPC). */
+  storageChain?: StorageChain;
 }
 
 /**
@@ -42,9 +45,14 @@ export interface AppOptions {
  *   GET  /api/me/jobs[/<id>]
  *   POST /api/me/tell {message}         tell your agent something
  *   POST /api/me/forget {episode}
+ *   GET  /api/me/storage                where memories are stored + next setup step
+ *   POST /api/me/storage/tx {step}      unsigned tx for the wallet (create-account | authorize-key)
+ *   POST /api/me/storage/execute {bytes, signature}
+ *   POST /api/me/storage/use {mode}     "own" (after setup) or "hosted"
  */
 export function createApp(o: AppOptions) {
   const auth = o.auth ?? new WalletAuth();
+  const chain = o.storageChain ?? mainnetStorageChain();
 
   return createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -88,6 +96,26 @@ export function createApp(o: AppOptions) {
         const address = auth.session(token);
         if (!address) return send(res, 401, { error: "connect and sign in with your wallet first" });
         tenant = o.tenants.forWallet(address);
+      }
+
+      if (name === "storage") {
+        if (tenant.readOnly) return send(res, 403, { error: "the demo agent is read-only" });
+        if (req.method !== "POST") return send(res, 200, await storageStatus(tenant, chain));
+        const b = await body<{ step?: string; bytes?: string; signature?: string; mode?: string }>(req);
+        if (rest === "tx") return send(res, 200, await storageTx(tenant, chain, String(b.step ?? "")));
+        if (rest === "execute") {
+          if (!b.bytes || !b.signature) return send(res, 400, { error: "bytes and signature are required" });
+          const digest = await chain.execute(b.bytes, b.signature);
+          return send(res, 200, { digest, status: await storageStatus(tenant, chain) });
+        }
+        if (rest === "use") {
+          if (b.mode === "hosted") {
+            tenant.useStorage("hosted");
+            return send(res, 200, await storageStatus(tenant, chain));
+          }
+          return send(res, 200, await useOwnStorage(tenant, chain));
+        }
+        return send(res, 404, { error: "unknown storage action" });
       }
 
       if (req.method === "POST") {
