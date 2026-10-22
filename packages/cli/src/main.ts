@@ -10,7 +10,7 @@ const program = new Command();
 program
   .name("engram")
   .description("Git for agent memory — versioned, provable memory on Walrus Memory")
-  .version("0.1.0")
+  .version("0.2.0")
   .option("-C, --dir <path>", "project folder containing .engram/", ".")
   .option("--env <file>", "env file with keys", ".env");
 
