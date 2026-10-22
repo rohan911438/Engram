@@ -13,3 +13,4 @@ export * from "./engram.js";
 export { servicesFromEnv, type EnvServices } from "./env.js";
 export { inspectApi, episodeView, type InspectHandler } from "./inspect.js";
 export * from "./memwal-account.js";
+export { engram, Mind, type EngramConfig, type WrapOptions, type WrappedAgent } from "./mind.js";
