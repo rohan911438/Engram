@@ -7,6 +7,7 @@ import { AddressAvatar, WalletButton } from "@/components/engram/wallet-button";
 import { setSource, middle, type Source } from "@/lib/api";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
+import { StatusBanner } from "@/components/engram/status-banner";
 
 export interface AppContext {
   source: Source;
@@ -106,6 +107,7 @@ export function AppLayout({ kind }: { kind: "app" | "demo" }) {
           </div>
         </div>
         <div className={cn("mx-auto max-w-7xl px-6 py-8 lg:px-8", loc.pathname.endsWith("/mind") && "h-[calc(100vh-3.5rem)] max-w-none")}>
+          {source !== null && <StatusBanner />}
           {source === null ? null : needsSignIn ? <SignInGate /> : <Outlet context={ctx} key={source} />}
         </div>
       </main>

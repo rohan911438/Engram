@@ -6,10 +6,15 @@ import { Engram, FakeAnchorer, InMemoryRemote, NothingToCommitError, servicesFro
 import { CONTEXT, MoneyOpsAgent, type Handled } from "./agent.js";
 import { describe, WalletFeed, type WalletEvent } from "./feed.js";
 import { SCENARIO } from "./scenario.js";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { LIVE_STORY, LiveChain, fundingNeeded, loadActors, type Actor } from "./live.js";
 
 const HELP = `money-ops — a wallet-watching agent with provable memory (Engram)
 
-  replay [--dir <path>] [--offline]   run the 4-month demo story
+  live [--network testnet|mainnet] [--dir <path>] [--fund-from-env]
+                                      the demo story with REAL transfers between five
+                                      wallets; the agent reads the owner's wallet from chain
+  replay [--dir <path>] [--offline]   the same story from a script (no chain)
   watch <0xaddress> [--dir <path>] [--every <sec>] [--commit-every <n>]
                                       watch a real Sui wallet via Tatum
 
@@ -136,9 +141,75 @@ async function watch() {
   }
 }
 
+async function live() {
+  const network = (flag("network") ?? "testnet") as "testnet" | "mainnet";
+  if (network !== "testnet" && network !== "mainnet") throw new Error("--network must be testnet or mainnet");
+  const dir = resolve(flag("dir") ?? `./money-ops-live-${network}`);
+  mkdirSync(dir, { recursive: true });
+  const actors = loadActors(dir);
+  const addr = Object.fromEntries(Object.entries(actors).map(([k, kp]) => [k, kp.toSuiAddress()])) as Record<Actor, string>;
+  const { engram, llm, tatum } = openRepo(dir, false);
+  const chain = new LiveChain(network, tatum);
+  console.log(pc.bold(`money-ops LIVE on Sui ${network} → ${dir}`));
+  for (const a of Object.keys(addr) as Actor[]) console.log(pc.dim(`  ${a.padEnd(10)} ${addr[a]}`));
+
+  // Everything flows from the employer's salaries; top it up first.
+  const need = fundingNeeded();
+  const have = await chain.balance(addr.employer);
+  const statePath = join(dir, "live-state.json");
+  const state = existsSync(statePath) ? (JSON.parse(readFileSync(statePath, "utf8")) as { step: number; seen: string[]; pending: string[] }) : { step: 0, seen: [], pending: [] };
+  if (state.step === 0 && have < need) {
+    if (!has("fund-from-env")) throw new Error(`fund the employer wallet ${addr.employer} with ${(need - have).toFixed(2)} SUI on ${network} (or pass --fund-from-env)`);
+    const funder = Ed25519Keypair.deriveKeypair((process.env.SUI_MNEMONIC ?? "").trim());
+    console.log(pc.dim(`
+funding employer with ${(need - have).toFixed(2)} SUI from ${funder.toSuiAddress().slice(0, 10)}…`));
+    await chain.send(funder, addr.employer, need - have);
+  }
+  console.log();
+
+  const feed = new WalletFeed(chain.reader, addr.owner);
+  const agent = new MoneyOpsAgent(engram, llm);
+  const seen = new Set(state.seen);
+  const save = () => writeFileSync(statePath, JSON.stringify({ step: state.step, seen: [...seen], pending: state.pending }));
+  const flush = async () => {
+    if (state.pending.length === 0) return;
+    await chain.waitIndexed(addr.owner, state.pending);
+    const events = await feed.fetch(seen, 50);
+    for (const h of await agent.handleMany(events)) {
+      print(h);
+      seen.add(h.event.digest);
+    }
+    state.pending = [];
+    save();
+  };
+
+  for (; state.step < LIVE_STORY.length; state.step++, save()) {
+    const step = LIVE_STORY[state.step]!;
+    if (step.type === "pay") {
+      const digest = await chain.send(actors[step.from], addr[step.to], step.sui);
+      console.log(pc.dim(`  ⛓  ${step.from} → ${step.to}  ${step.sui} SUI  (${step.note})  tx ${digest.slice(0, 10)}…`));
+      if (step.from === "owner" || step.to === "owner") state.pending.push(digest);
+      continue;
+    }
+    await flush();
+    if (step.type === "owner") {
+      const message = step.message(addr);
+      agent.ownerSays(message);
+      console.log(`${pc.dim(new Date().toISOString().slice(0, 10))} ${pc.magenta("💬 owner:")} ${message}`);
+    } else {
+      await sleepAndCommit(engram, llm, step.label);
+    }
+  }
+  await flush();
+  await sleepAndCommit(engram, llm, "Month 5: applying what it learned");
+  await engram.push();
+  console.log(pc.dim(`Try:  engram -C ${dir} log   ·   engram -C ${dir} verify ${engram.receipts().at(-1)?.id ?? "HEAD"}`));
+}
+
 const cmd = args[0];
 try {
-  if (cmd === "replay") await replay();
+  if (cmd === "live") await live();
+  else if (cmd === "replay") await replay();
   else if (cmd === "watch") await watch();
   else console.log(HELP);
 } catch (err) {

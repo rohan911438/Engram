@@ -4,6 +4,8 @@ import { extname, join, normalize, resolve } from "node:path";
 import { inspectApi, type TatumSui } from "@engram/sdk";
 import { WalletAuth } from "./auth.js";
 import type { Tenant, Tenants } from "./tenants.js";
+import { DEFAULT_LIMITS, RateLimiter, bucketFor, clientIp, probeHealth, type Health } from "./guard.js";
+import { lastLlmError } from "./tenants.js";
 import { mainnetStorageChain, storageStatus, storageTx, useOwnStorage, type StorageChain } from "./storage.js";
 
 const TYPES: Record<string, string> = {
@@ -29,12 +31,20 @@ export interface AppOptions {
   secureCookies?: boolean;
   /** Chain access for "use my own Walrus storage" (default: Sui Mainnet over gRPC). */
   storageChain?: StorageChain;
+  /** Per-client limits; pass {} to disable (tests). */
+  limits?: ConstructorParameters<typeof RateLimiter>[0];
+  /** Trust X-Forwarded-For (set when running behind a proxy such as Railway). */
+  trustProxy?: boolean;
+  /** For GET /api/health. */
+  walrusUrl?: string;
+  llmConfigured?: boolean;
 }
 
 /**
  * Routes
  *   GET  /api/mode                      { mode: "hosted" }
  *   GET  /api/stats                     public numbers for the homepage
+ *   GET  /api/health                    Walrus / Sui (Tatum) / LLM status
  *   GET  /api/auth/me                   { address | null }
  *   POST /api/auth/challenge {address}  → { nonce, message } to sign
  *   POST /api/auth/verify {nonce, signature}
@@ -53,6 +63,8 @@ export interface AppOptions {
 export function createApp(o: AppOptions) {
   const auth = o.auth ?? new WalletAuth();
   const chain = o.storageChain ?? mainnetStorageChain();
+  const limiter = new RateLimiter(o.limits ?? DEFAULT_LIMITS);
+  let health: { at: number; value: Promise<Health> } | null = null;
 
   return createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
@@ -63,6 +75,18 @@ export function createApp(o: AppOptions) {
         return serveStatic(o.staticDir, path, res);
       }
       const token = cookie(req, "engram_session");
+      const bucket = bucketFor(req.method ?? "GET", path);
+      const wait = bucket ? limiter.check(clientIp(req, !!o.trustProxy), bucket) : 0;
+      if (wait > 0) {
+        res.setHeader("retry-after", String(wait));
+        return send(res, 429, { error: `Too many requests — try again in ${wait < 90 ? `${wait}s` : `${Math.ceil(wait / 60)} min`}.` });
+      }
+      if (path === "/api/health") {
+        if (!health || Date.now() - health.at > 60_000) {
+          health = { at: Date.now(), value: probeHealth({ walrusUrl: o.walrusUrl ?? "https://relayer.memory.walrus.xyz", latestCheckpoint: o.tatum ? () => o.tatum!.latestCheckpoint() : undefined, llmConfigured: o.llmConfigured ?? true, llmLastError: lastLlmError }) };
+        }
+        return send(res, 200, await health.value);
+      }
 
       if (path === "/api/mode") return send(res, 200, { mode: "hosted", demo: !!o.demo });
       if (path === "/api/stats") return send(res, 200, await stats(o));

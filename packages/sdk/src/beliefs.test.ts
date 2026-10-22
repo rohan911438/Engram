@@ -197,3 +197,26 @@ describe("GeminiLLM daily quota", () => {
     expect(calls).toEqual(["k1:a", "k2:a", "k2:b", "k2:b"]);
   });
 });
+
+describe("relayerRetry", () => {
+  it("waits out a relayer 429 using retry_after_seconds, then succeeds", async () => {
+    const { relayerRetry } = await import("./remote.js");
+    const waits: number[] = [];
+    let calls = 0;
+    const r = await relayerRetry(
+      async () => {
+        if (++calls < 3) throw new Error('Walrus Memory server error (429): {"error":"Rate limit exceeded","retry_after_seconds":12}');
+        return "ok";
+      },
+      { sleep: async (ms) => void waits.push(ms) },
+    );
+    expect(r).toBe("ok");
+    expect(waits).toEqual([12_500, 12_500]);
+  });
+  it("does not retry other errors", async () => {
+    const { relayerRetry } = await import("./remote.js");
+    let calls = 0;
+    await expect(relayerRetry(async () => { calls++; throw new Error("HTTP 400 bad"); }, { sleep: async () => {} })).rejects.toThrow(/400/);
+    expect(calls).toBe(1);
+  });
+});

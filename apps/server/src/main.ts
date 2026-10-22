@@ -15,7 +15,7 @@ const demoDir = resolve(process.env.ENGRAM_DEMO_DIR ?? join(root, "demo", "money
 const staticDir = [process.env.ENGRAM_WEB_DIST, join(root, "apps", "web", "dist")].find((d) => d && existsSync(join(d, "index.html"))) ?? null;
 
 const demo = existsSync(join(demoDir, ".engram", "config.json")) ? new Tenant("demo", demoDir, services, true) : null;
-const app = createApp({ tenants: new Tenants(dataDir, services), demo, tatum: s.tatum, staticDir, secureCookies: process.env.NODE_ENV === "production" });
+const app = createApp({ tenants: new Tenants(dataDir, services), demo, tatum: s.tatum, staticDir, secureCookies: process.env.NODE_ENV === "production", trustProxy: process.env.TRUST_PROXY === "1", walrusUrl: process.env.MEMWAL_SERVER_URL, llmConfigured: !!(process.env.GEMINI_API_KEYS ?? process.env.GEMINI_API_KEY) });
 
 const port = Number(process.env.PORT ?? 8787);
 app.listen(port, process.env.HOST ?? "127.0.0.1", () => {

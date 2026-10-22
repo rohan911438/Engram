@@ -27,7 +27,7 @@ export function DashboardPage() {
     <div className="space-y-8">
       <Hero s={s} />
       {!ctx.readOnly && <Controls fresh={fresh} onChange={refresh} />}
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Decisions key={`d${nonce}`} />
         <div className="space-y-6">
           {!ctx.readOnly && <TellAgent onSent={refresh} />}
@@ -156,7 +156,7 @@ function Controls({ fresh, onChange }: { fresh: boolean; onChange: () => void })
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#07070a]">
       {running && <BorderBeam size={160} duration={5} colorFrom="#a78bfa" colorTo="#67e8f9" />}
-      <div className="grid gap-0 lg:grid-cols-[1fr_1.1fr]">
+      <div className="grid grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="border-b border-white/[0.06] p-6 lg:border-r lg:border-b-0">
           <div className="flex items-center gap-2 text-sm font-medium"><Sparkles className="size-4 text-[#a78bfa]" /> Run your agent</div>
           <p className="mt-2 text-sm text-muted-foreground">

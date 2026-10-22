@@ -133,6 +133,7 @@ export interface StorageStatus {
 export const server = {
   mode: () => request<{ mode: "local" | "hosted"; demo?: boolean }>("/api/mode").catch(() => ({ mode: "local" as const, demo: false })),
   stats: () => request<Stats>("/api/stats"),
+  health: () => request<Health>("/api/health"),
   me: () => request<{ address: string | null }>("/api/auth/me"),
   challenge: (address: string) => request<{ nonce: string; message: string }>("/api/auth/challenge", { method: "POST", body: JSON.stringify({ address }) }),
   verify: (nonce: string, signature: string) => request<{ address: string }>("/api/auth/verify", { method: "POST", body: JSON.stringify({ nonce, signature }) }),
@@ -173,4 +174,12 @@ export function tagColor(tag: string | undefined): string {
   let h = 0;
   for (const c of tag) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return PALETTE[h % PALETTE.length]!;
+}
+
+export type ServiceState = "ok" | "degraded" | "down" | "not configured";
+export interface Health {
+  checkedAt: number;
+  walrus: { state: ServiceState; detail: string };
+  sui: { state: ServiceState; detail: string };
+  llm: { state: ServiceState; detail: string };
 }

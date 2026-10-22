@@ -132,6 +132,9 @@ importers:
       '@engram/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@mysten/sui':
+        specifier: ^2.37.0
+        version: 2.37.0(typescript@5.9.3)
       dotenv:
         specifier: ^18.0.8
         version: 18.0.8

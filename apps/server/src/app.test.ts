@@ -49,7 +49,7 @@ beforeAll(async () => {
   const ep = e.observe({ source: "user", data: "hi" });
   e.applyOp({ op: "create", key: "x", statement: "X.", confidence: 0.8, evidence: [ep.id], tags: ["x"], reason: "t" });
   await e.commit("demo");
-  const server = createApp({ tenants: new Tenants(join(dir, "data"), services), demo: new Tenant("demo", demoDir, services, true), staticDir: null, storageChain: chain });
+  const server = createApp({ tenants: new Tenants(join(dir, "data"), services), demo: new Tenant("demo", demoDir, services, true), staticDir: null, storageChain: chain, limits: { auth: { max: 40, windowMs: 60_000 } } });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   stop = () => server.close();
@@ -162,6 +162,12 @@ describe("agents", () => {
     expect(ownRemote.items.length).toBeGreaterThan(before);
     // demo stays read-only
     expect((await call("/api/demo/storage")).status).toBe(403);
+  });
+
+  it("rate-limits sign-in attempts per client", async () => {
+    let last = 0;
+    for (let i = 0; i < 45; i++) last = (await call("/api/auth/challenge", { json: { address: "0x1" } })).status;
+    expect(last).toBe(429);
   });
 
   it("public stats count agents", async () => {

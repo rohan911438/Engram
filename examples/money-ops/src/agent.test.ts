@@ -74,6 +74,17 @@ group("WalletFeed", () => {
     expect(describe(x!)).toBe("sent 450 USDC to 0xlandlo…");
   });
 
+  it("reports the amount received, not our debit including gas", async () => {
+    const [x] = await feed.toEvents({
+      digest: "R", transaction: { data: { sender: me } },
+      balanceChanges: [
+        { owner: { AddressOwner: me }, coinType: "0x2::sui::SUI", amount: "-46500000" },
+        { owner: { AddressOwner: "0xlandlord" }, coinType: "0x2::sui::SUI", amount: "45000000" },
+      ],
+    });
+    expect(x).toMatchObject({ direction: "out", coin: "SUI", amount: 0.045, counterparty: "0xlandlord" });
+  });
+
   it("labels gas-only and swaps", async () => {
     const gas = await feed.toEvents({ digest: "G", transaction: { data: { sender: me } }, balanceChanges: [{ owner: { AddressOwner: me }, coinType: "0x2::sui::SUI", amount: "-100398" }] });
     expect(gas[0]).toMatchObject({ kind: "gas_only", amount: 0.000100398 });

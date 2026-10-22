@@ -214,6 +214,12 @@ export function agentName(address: string): string {
   return `w-${address.slice(2, 12).toLowerCase()}`;
 }
 
+/** Last LLM failure in the past 30 minutes (quota, outage) — shown as "degraded". */
+let llmFailure: { at: number; message: string } | null = null;
+export function lastLlmError(): string | null {
+  return llmFailure && Date.now() - llmFailure.at < 30 * 60_000 ? llmFailure.message : null;
+}
+
 /** Defers creating the LLM until it's needed, so read-only use never needs a key. */
 function lazyLlm(make: () => LLM): LLM {
   let inner: LLM | undefined;
@@ -221,7 +227,17 @@ function lazyLlm(make: () => LLM): LLM {
     get name() {
       return (inner ??= make()).name;
     },
-    json: (s, p, schema) => (inner ??= make()).json(s, p, schema),
+    json: async <T,>(s: string, p: string, schema: Parameters<LLM["json"]>[2]): Promise<T> => {
+      try {
+        const r = await (inner ??= make()).json<T>(s, p, schema);
+        llmFailure = null;
+        return r;
+      } catch (err) {
+        const msg = (err as Error).message;
+        llmFailure = { at: Date.now(), message: /quota|429|exhaust/i.test(msg) ? "LLM daily quota used up — learning resumes when it resets" : `LLM error: ${msg.slice(0, 120)}` };
+        throw err;
+      }
+    },
   };
 }
 

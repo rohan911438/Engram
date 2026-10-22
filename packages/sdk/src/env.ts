@@ -2,7 +2,7 @@ import { MoveAnchorer, WalrusBlobAnchorer, type Anchorer } from "./anchor.js";
 import { GeminiLLM, geminiEmbedder, type LLM } from "./llm.js";
 import { suiGrpc } from "./anchor.js";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { WalrusMemoryRemote, type ManualModeConfig, type RemoteHit, type RemoteMemory } from "./remote.js";
+import { WalrusMemoryRemote, type ManualModeConfig, type RemoteHit, type RemoteMemory, type SearchOptions } from "./remote.js";
 import { TatumSui } from "./tatum.js";
 
 /**
@@ -73,8 +73,8 @@ class LazyRemote implements RemoteMemory {
   putMany(items: { namespace: string; text: string }[]): Promise<string[]> {
     return items.length === 0 ? Promise.resolve([]) : this.get().putMany(items);
   }
-  search(namespace: string, query: string, limit?: number): Promise<RemoteHit[]> {
-    return this.get().search(namespace, query, limit);
+  search(namespace: string, query: string, limit?: number, opts?: SearchOptions): Promise<RemoteHit[]> {
+    return this.get().search(namespace, query, limit, opts);
   }
 }
 

@@ -8,12 +8,14 @@
     "replay": "tsx src/main.ts replay",
     "watch": "tsx src/main.ts watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "live": "tsx src/main.ts live"
   },
   "dependencies": {
     "@engram/sdk": "workspace:*",
     "dotenv": "^18.0.8",
-    "picocolors": "^1.1.1"
+    "picocolors": "^1.1.1",
+    "@mysten/sui": "^2.37.0"
   },
   "exports": {
     ".": "./src/index.ts"

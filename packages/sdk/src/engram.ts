@@ -646,7 +646,7 @@ export class Engram {
     else if (!c.manifestBlobId) add("walrus", false, "manifest was never stored on Walrus");
     else {
       try {
-        const hits = await this.remote.search(this.config.namespaces.commits, `Engram commit ${c.id}`, 10);
+        const hits = await this.remote.search(this.config.namespaces.commits, `Engram commit ${c.id}`, 10, { deep: true });
         const hit = hits.find((h) => h.blobId === c.manifestBlobId);
         const ok = !!hit && hit.text === commitText(c.id, m, c.signature);
         add("walrus", ok, ok ? `manifest recalled from Walrus Memory, blob ${c.manifestBlobId.slice(0, 10)}…` : hit ? "manifest on Walrus differs from local copy" : "manifest not found in Walrus Memory recall");

@@ -64,6 +64,8 @@ export class WalletFeed {
       amount = Math.abs(amount);
       const kind = mine.length > 1 && mine.some((m) => Number(m.amount) > 0) && mine.some((m) => Number(m.amount) < 0) ? "swap" : "transfer";
       const opposite = others.find((o) => o.coinType === c.coinType && Math.sign(Number(o.amount)) !== Math.sign(Number(c.amount)));
+      // Our SUI debit includes the gas fee; what the other side received is the real amount.
+      if (opposite && direction === "out" && sender === this.address) amount = Math.abs(Number(BigInt(opposite.amount)) / 10 ** meta.decimals);
       // Swaps go through a DEX pool (shared object) — there's no person on the other side.
       let counterparty = kind === "swap" ? null : opposite ? ownerOf(opposite.owner) : direction === "in" ? (sender ?? null) : null;
       if (counterparty === this.address) counterparty = null;

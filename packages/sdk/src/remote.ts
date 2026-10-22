@@ -15,7 +15,15 @@ export interface RemoteHit {
 export interface RemoteMemory {
   /** Stores each text and returns its Walrus blob ID, in order. */
   putMany(items: { namespace: string; text: string }[]): Promise<string[]>;
-  search(namespace: string, query: string, limit?: number): Promise<RemoteHit[]>;
+  /**
+   * `deep`: also look where cheap search can't (e.g. Walrus Memory manual-mode
+   * records) — for verification, which needs one exact record.
+   */
+  search(namespace: string, query: string, limit?: number, opts?: SearchOptions): Promise<RemoteHit[]>;
+}
+
+export interface SearchOptions {
+  deep?: boolean;
 }
 
 export interface WalrusMemoryConfig {
@@ -108,7 +116,7 @@ export class WalrusMemoryRemote implements RemoteMemory {
     // Three at a time keeps Seal key servers and the embedder within rate limits.
     for (let i = 0; i < items.length; i += 3) {
       const batch = items.slice(i, i + 3);
-      const res = await Promise.all(batch.map((it) => manual.rememberManual(it.text, it.namespace)));
+      const res = await Promise.all(batch.map((it) => relayerRetry(() => manual.rememberManual(it.text, it.namespace))));
       for (const r of res) {
         if (!r.blob_id) throw new Error("Walrus Memory manual write returned no blob ID");
         out.push(r.blob_id);
@@ -123,7 +131,7 @@ export class WalrusMemoryRemote implements RemoteMemory {
     // Keep batches small so one slow item doesn't hold up everything.
     for (let i = 0; i < items.length; i += 20) {
       const batch = items.slice(i, i + 20);
-      const res = await this.client.rememberBulkAndWait(batch, { timeoutMs: 300_000 });
+      const res = await relayerRetry(() => this.client.rememberBulkAndWait(batch, { timeoutMs: 300_000 }));
       batch.forEach((_, j) => {
         const r = res.results[j];
         if (!r || r.status !== "done" || !r.blob_id) {
@@ -136,23 +144,38 @@ export class WalrusMemoryRemote implements RemoteMemory {
   }
 
   /**
-   * Searches both write paths: relayer recall (relayer-embedded memories) and,
-   * when configured, manual recall (locally embedded, decrypted here). Results
-   * are merged by blob ID; one path failing is fine if the other answers.
+   * Relayer recall first. Manual-mode recall (embed locally, decrypt here) runs
+   * when the relayer fails, or for a deep search — it is slower and only sees
+   * records written in manual mode. Results are merged by blob ID.
    */
-  async search(namespace: string, query: string, limit = 10): Promise<RemoteHit[]> {
+  async search(namespace: string, query: string, limit = 10, opts: SearchOptions = {}): Promise<RemoteHit[]> {
     const manual = this.manual();
-    const [auto, man] = await Promise.allSettled([
-      this.client.recall({ query, limit, namespace }).then((res) => res.results.map((r) => ({ blobId: r.blob_id, text: r.text, distance: r.distance }))),
-      manual ? manual.recallManual(query, { limit, namespace }).then((res) => res.results.flatMap((r) => ("text" in r ? [{ blobId: r.blob_id, text: r.text, distance: r.distance }] : []))) : Promise.resolve([] as RemoteHit[]),
-    ]);
-    if (auto.status === "rejected" && (man.status === "rejected" || !manual)) throw auto.reason;
+    let auto: RemoteHit[] = [];
+    let autoErr: unknown = null;
+    try {
+      const res = await relayerRetry(() => this.client.recall({ query, limit, namespace }));
+      auto = res.results.map((r) => ({ blobId: r.blob_id, text: r.text, distance: r.distance }));
+    } catch (err) {
+      autoErr = err;
+    }
+    if (!manual || (!autoErr && !opts.deep)) {
+      if (autoErr) throw autoErr;
+      return auto;
+    }
+    let man: RemoteHit[] = [];
+    try {
+      man = await quietSealLogs(() => manual.recallManual(query, { limit, namespace })).then((res) =>
+        res.results.flatMap((r) => ("text" in r ? [{ blobId: r.blob_id, text: r.text, distance: r.distance }] : [])),
+      );
+    } catch (err) {
+      if (autoErr) throw autoErr;
+    }
     const merged = new Map<string, RemoteHit>();
-    for (const r of [...(auto.status === "fulfilled" ? auto.value : []), ...(man.status === "fulfilled" ? man.value : [])]) {
+    for (const r of [...auto, ...man]) {
       const prev = merged.get(r.blobId);
       if (!prev || r.distance < prev.distance) merged.set(r.blobId, r);
     }
-    return [...merged.values()].sort((a, b) => a.distance - b.distance).slice(0, limit);
+    return [...merged.values()].sort((x, y) => x.distance - y.distance).slice(0, limit);
   }
 
   async health(): Promise<boolean> {
@@ -201,8 +224,8 @@ export class CombinedRemote implements RemoteMemory {
     return this.primary.putMany(items);
   }
 
-  async search(namespace: string, query: string, limit = 10): Promise<RemoteHit[]> {
-    const [a, b] = await Promise.allSettled([this.primary.search(namespace, query, limit), this.secondary.search(namespace, query, limit)]);
+  async search(namespace: string, query: string, limit = 10, opts?: SearchOptions): Promise<RemoteHit[]> {
+    const [a, b] = await Promise.allSettled([this.primary.search(namespace, query, limit, opts), this.secondary.search(namespace, query, limit, opts)]);
     if (a.status === "rejected" && b.status === "rejected") throw a.reason;
     const merged = new Map<string, RemoteHit>();
     for (const h of [...(a.status === "fulfilled" ? a.value : []), ...(b.status === "fulfilled" ? b.value : [])]) {
@@ -210,5 +233,42 @@ export class CombinedRemote implements RemoteMemory {
       if (!prev || h.distance < prev.distance) merged.set(h.blobId, h);
     }
     return [...merged.values()].sort((x, y) => x.distance - y.distance).slice(0, limit);
+  }
+}
+
+/**
+ * Manual recall tries to decrypt every hit in the namespace, including records
+ * written by the relayer under a different Seal identity; the SDK logs each of
+ * those expected failures. Keep them out of the agent's output.
+ */
+async function quietSealLogs<T>(fn: () => Promise<T>): Promise<T> {
+  const orig = console.error;
+  console.error = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && args[0].startsWith("[MemWalManual]")) return;
+    orig(...args);
+  };
+  try {
+    return await fn();
+  } finally {
+    console.error = orig;
+  }
+}
+
+/**
+ * The relayer limits each key to 60 weighted requests a minute and answers 429
+ * with retry_after_seconds. Wait and retry (up to ~3 minutes) instead of failing.
+ */
+export async function relayerRetry<T>(fn: () => Promise<T>, opts: { attempts?: number; sleep?: (ms: number) => Promise<void> } = {}): Promise<T> {
+  const attempts = opts.attempts ?? 4;
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  for (let i = 0; ; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const msg = String((err as Error).message ?? err);
+      if (i + 1 >= attempts || !/\b429\b|rate limit/i.test(msg)) throw err;
+      const after = Number(/retry_after_seconds"?\s*:\s*(\d+)/.exec(msg)?.[1] ?? 30);
+      await sleep(Math.min(after, 90) * 1000 + 500);
+    }
   }
 }
