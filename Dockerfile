@@ -19,8 +19,6 @@ COPY . .
 RUN pnpm build
 
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=8787 ENGRAM_DATA=/data
-# Read-only demo agent, if it was in the build context.
-ENV ENGRAM_DEMO_DIR=/app/demo/money-ops
 VOLUME /data
 EXPOSE 8787
 CMD ["pnpm", "--filter", "@engram/server", "start"]

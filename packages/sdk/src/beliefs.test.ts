@@ -217,6 +217,8 @@ describe("relayerRetry", () => {
     const { relayerRetry } = await import("./remote.js");
     let calls = 0;
     await expect(relayerRetry(async () => { calls++; throw new Error("HTTP 400 bad"); }, { sleep: async () => {} })).rejects.toThrow(/400/);
+    let c5 = 0;
+    expect(await relayerRetry(async () => { if (++c5 < 2) throw new Error("server error (500): Internal server error"); return 1; }, { sleep: async () => {} })).toBe(1);
     expect(calls).toBe(1);
   });
 });

@@ -37,22 +37,31 @@ Agents now remember things, but their memory is a black box that only grows:
 
 ## The demo agent: money-ops
 
-`examples/money-ops` watches a Sui wallet through Tatum, learns its owner's habits, and decides
-whether to alert. Every decision is a signed receipt. Its behaviour visibly changes as it learns
-([full transcript](docs/demo-replay.md)):
+`examples/money-ops` watches a Sui wallet, learns its owner's habits, and decides whether each
+movement deserves an alert. Every decision is a signed receipt.
 
-| Phase | What happens | Alerts |
+**The demo story uses real transactions.** `money-ops live` creates five wallets (owner, employer,
+landlord, streaming service, scammer) and sends real SUI between them: salary in, rent and a
+subscription out, a rent rise, and a staged theft. The agent never sees the script. It reads
+the owner's wallet from the chain like any other wallet (Tatum on Mainnet, the public Sui node on
+Testnet, because Tatum has no Sui Testnet).
+
+| Phase | What happens on chain | Agent |
 |---|---|---|
-| July | Knows nothing — asks about everything. Owner explains rent, salary, subscription, swaps | 4 / 4 |
-| Aug–Sep | Same habits — stays quiet, citing the belief behind each decision | **0 / 8** |
-| October | Rent rises to 500 → *warn*; 1 800 USDC to an unknown address at 3 a.m. → *critical*. Owner: "that was a scam" | 2 / 2 |
-| November | New rent accepted silently; a payment to the scam address is caught from memory | 1 / 2 |
+| Month 1 | Salary in; rent and subscription out. The owner explains them | 3 / 3 alerted, then learns 3 beliefs |
+| Months 2–3 | The same six transfers again | **0 / 6 alerted**; each receipt cites the belief it used |
+| Month 4 | Rent rises; 0.18 SUI goes to an unknown address. The owner: "that's a scammer" | Revises rent, learns the scam address |
+| Month 5 | New rent; another payment to the scammer | Quiet on rent, catches the scammer from memory |
 
 ```bash
-pnpm --filter @engram/money-ops replay              # Walrus Memory + Sui (needs .env)
-pnpm --filter @engram/money-ops replay --offline    # in-memory storage, real LLM
-pnpm --filter @engram/money-ops watch 0x<address>   # a real wallet, live via Tatum
+pnpm --filter @engram/money-ops live --network testnet --fund-from-env   # real transfers on Testnet
+pnpm --filter @engram/money-ops live --network mainnet                   # same on Mainnet (fund the employer first)
+pnpm --filter @engram/money-ops watch 0x<address>                        # any real wallet, live via Tatum
+pnpm --filter @engram/money-ops replay --offline                         # scripted version, no chain (for tests)
 ```
+
+The theft is staged (the owner's own key signs it), but it is an ordinary on-chain transfer.
+Amounts are small: the whole story moves about 0.75 SUI.
 
 ## Quick start
 

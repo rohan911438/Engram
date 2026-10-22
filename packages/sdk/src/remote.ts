@@ -256,7 +256,8 @@ async function quietSealLogs<T>(fn: () => Promise<T>): Promise<T> {
 
 /**
  * The relayer limits each key to 60 weighted requests a minute and answers 429
- * with retry_after_seconds. Wait and retry (up to ~3 minutes) instead of failing.
+ * with retry_after_seconds; it also has brief 5xx hiccups. Wait and retry
+ * instead of failing.
  */
 export async function relayerRetry<T>(fn: () => Promise<T>, opts: { attempts?: number; sleep?: (ms: number) => Promise<void> } = {}): Promise<T> {
   const attempts = opts.attempts ?? 4;
@@ -266,8 +267,11 @@ export async function relayerRetry<T>(fn: () => Promise<T>, opts: { attempts?: n
       return await fn();
     } catch (err) {
       const msg = String((err as Error).message ?? err);
-      if (i + 1 >= attempts || !/\b429\b|rate limit/i.test(msg)) throw err;
-      const after = Number(/retry_after_seconds"?\s*:\s*(\d+)/.exec(msg)?.[1] ?? 30);
+      const limited = /\b429\b|rate limit/i.test(msg);
+      // Transient server errors (the relayer has been flaky) get a short backoff too.
+      const transient = /\b50[0234]\b|internal server error|ECONNRESET|fetch failed/i.test(msg);
+      if (i + 1 >= attempts || (!limited && !transient)) throw err;
+      const after = limited ? Number(/retry_after_seconds"?\s*:\s*(\d+)/.exec(msg)?.[1] ?? 30) : 5 * (i + 1);
       await sleep(Math.min(after, 90) * 1000 + 500);
     }
   }

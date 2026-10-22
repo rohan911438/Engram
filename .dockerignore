@@ -8,3 +8,6 @@ contracts/*/build
 .claude
 Idea
 *.log
+demo/**/actors.json
+demo/**/live-state.json
+demo/money-ops
