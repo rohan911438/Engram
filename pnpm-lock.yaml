@@ -238,6 +238,10 @@ importers:
       '@noble/hashes':
         specifier: ^2.4.0
         version: 2.4.0
+    devDependencies:
+      '@scure/bip39':
+        specifier: 2.4.0
+        version: 2.4.0
 
   spikes:
     dependencies:

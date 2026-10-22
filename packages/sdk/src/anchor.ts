@@ -1,6 +1,8 @@
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { SuiJsonRpcClient, JsonRpcHTTPTransport } from "@mysten/sui/jsonRpc";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
+import { bcs } from "@mysten/sui/bcs";
 import { hexToBytes } from "./crypto.js";
 import { blobIdFromU256, type TatumSui } from "./tatum.js";
 import type { Anchor, Commit } from "./types.js";
@@ -56,7 +58,7 @@ export class WalrusBlobAnchorer implements Anchorer {
   }
 
   async check(anchor: Anchor, blobId: string, commit: Commit): Promise<AnchorCheck> {
-    if (anchor.method === "move-event") return checkMoveAnchor(this.tatum, anchor, commit);
+    if (anchor.method === "move-event") return checkMoveAnchor(anchor.network === "testnet" ? new GrpcEventReader("testnet") : this.tatum, anchor, commit);
     const obj = await this.tatum.getObject(anchor.objectId);
     if (!obj) return { ok: false, detail: `Sui object ${anchor.objectId} not found` };
     const fields = obj.content?.fields as { blob_id?: string; certified_epoch?: number | null } | undefined;
@@ -93,33 +95,102 @@ export class FakeAnchorer implements Anchorer {
   }
 }
 
+
 // ---- Option B: own Move module ------------------------------------------------
 
+export type SuiNetwork = "mainnet" | "testnet";
 
 export interface MoveAnchorerOptions {
-  tatum: TatumSui;
-  tatumApiKey: string;
   /** Published `engram_anchor` package ID. */
   packageId: string;
   /** Wallet that pays gas (BIP-39 phrase). */
   mnemonic: string;
+  /** Default mainnet. Mainnet sends and re-reads through Tatum; testnet uses the public Sui gRPC node. */
+  network?: SuiNetwork;
+  /** Required on mainnet. */
+  tatum?: TatumSui;
+  tatumApiKey?: string;
+  /** Checks older commits that were anchored as Walrus Blobs. */
+  blobAnchorer?: Anchorer;
+}
+
+/** The fields of one `Anchored` event, hex-encoded. */
+interface AnchoredRead {
+  checkpoint?: string;
+  timestampMs?: number;
+  event?: { commitId: string; merkleRoot: string; agentPubKey: string };
+}
+
+/** Reads the `Anchored` event of a transaction from some Sui endpoint. */
+export interface AnchoredEventReader {
+  readAnchored(digest: string, eventType: string): Promise<AnchoredRead>;
+}
+
+const AnchoredBcs = bcs.struct("Anchored", {
+  sender: bcs.Address,
+  agent_pubkey: bcs.vector(bcs.u8()),
+  commit_id: bcs.vector(bcs.u8()),
+  merkle_root: bcs.vector(bcs.u8()),
+  parent: bcs.vector(bcs.u8()),
+  manifest_blob: bcs.vector(bcs.u8()),
+  timestamp_ms: bcs.u64(),
+});
+const toHex = (b: Iterable<number>) => Buffer.from([...b]).toString("hex");
+
+const grpcClients = new Map<SuiNetwork, SuiGrpcClient>();
+export function suiGrpc(network: SuiNetwork): SuiGrpcClient {
+  let c = grpcClients.get(network);
+  if (!c) grpcClients.set(network, (c = new SuiGrpcClient({ network, baseUrl: `https://fullnode.${network}.sui.io:443` })));
+  return c;
+}
+
+/** Reads anchors from a public Sui full node over gRPC (used for testnet). */
+export class GrpcEventReader implements AnchoredEventReader {
+  constructor(readonly network: SuiNetwork) {}
+  async readAnchored(digest: string, eventType: string): Promise<AnchoredRead> {
+    const res = await suiGrpc(this.network).getTransaction({ digest, include: { events: true } });
+    const t = res.Transaction ?? res.FailedTransaction;
+    const ev = t?.events?.find((e) => e.eventType === eventType);
+    const out: AnchoredRead = { checkpoint: t?.checkpoint ?? undefined, timestampMs: t?.timestampMs ?? undefined };
+    if (ev && res.$kind === "Transaction") {
+      const p = AnchoredBcs.parse(ev.bcs);
+      out.event = { commitId: toHex(p.commit_id), merkleRoot: toHex(p.merkle_root), agentPubKey: toHex(p.agent_pubkey) };
+    }
+    return out;
+  }
+}
+
+/** Reads anchors through Tatum's Sui (mainnet) JSON-RPC. */
+export function tatumEventReader(tatum: TatumSui): AnchoredEventReader {
+  return {
+    async readAnchored(digest, eventType) {
+      const tx = await tatum.rpc<{ checkpoint?: string; timestampMs?: string; events?: { type: string; parsedJson?: Record<string, unknown> }[] }>("sui_getTransactionBlock", [digest, { showEvents: true }]);
+      const ev = tx.events?.find((e) => e.type === eventType)?.parsedJson;
+      const hex = (v: unknown) => (Array.isArray(v) ? toHex(v as number[]) : typeof v === "string" ? Buffer.from(v, "base64").toString("hex") : "");
+      return {
+        checkpoint: tx.checkpoint,
+        timestampMs: tx.timestampMs ? Number(tx.timestampMs) : undefined,
+        event: ev ? { commitId: hex(ev.commit_id), merkleRoot: hex(ev.merkle_root), agentPubKey: hex(ev.agent_pubkey) } : undefined,
+      };
+    },
+  };
 }
 
 /**
  * Option B anchoring: each commit calls `engram_anchor::anchor::anchor`, which
  * emits an `Anchored` event with the commit ID and Merkle root in the clear.
- * The transaction is sent and later re-read through Tatum's Sui RPC.
+ * Mainnet transactions are sent and re-read through Tatum's Sui RPC.
  */
 export class MoveAnchorer implements Anchorer {
-  private client: SuiJsonRpcClient;
   private keypair: Ed25519Keypair;
+  readonly network: SuiNetwork;
+  private reader: AnchoredEventReader;
 
   constructor(private opts: MoveAnchorerOptions) {
     this.keypair = Ed25519Keypair.deriveKeypair(opts.mnemonic.trim());
-    this.client = new SuiJsonRpcClient({
-      network: "mainnet",
-      transport: new JsonRpcHTTPTransport({ url: opts.tatum.url, rpc: { headers: { "x-api-key": opts.tatumApiKey } } }),
-    });
+    this.network = opts.network ?? "mainnet";
+    if (this.network === "mainnet" && (!opts.tatum || !opts.tatumApiKey)) throw new Error("mainnet anchoring needs a Tatum API key");
+    this.reader = this.network === "mainnet" ? tatumEventReader(opts.tatum!) : new GrpcEventReader(this.network);
   }
 
   get address(): string {
@@ -130,7 +201,7 @@ export class MoveAnchorer implements Anchorer {
     return `${this.opts.packageId}::anchor::Anchored`;
   }
 
-  async publish(c: Commit): Promise<Anchor | null> {
+  private buildTx(c: Commit): Transaction {
     const tx = new Transaction();
     tx.moveCall({
       target: `${this.opts.packageId}::anchor::anchor`,
@@ -143,31 +214,63 @@ export class MoveAnchorer implements Anchorer {
         tx.object.clock(),
       ],
     });
-    const res = await this.client.signAndExecuteTransaction({ transaction: tx, signer: this.keypair, options: { showEffects: true } });
-    if (res.effects?.status.status !== "success") throw new Error(`anchor transaction failed: ${res.effects?.status.error ?? "unknown"}`);
-    await this.client.waitForTransaction({ digest: res.digest });
-    const t = await this.opts.tatum.getTransaction(res.digest);
-    return { method: "move-event", objectId: this.opts.packageId, txDigest: res.digest, checkpoint: t.checkpoint, timestampMs: t.timestampMs };
+    return tx;
+  }
+
+  private async send(c: Commit): Promise<string> {
+    if (this.network === "mainnet") {
+      const client = new SuiJsonRpcClient({
+        network: "mainnet",
+        transport: new JsonRpcHTTPTransport({ url: this.opts.tatum!.url, rpc: { headers: { "x-api-key": this.opts.tatumApiKey! } } }),
+      });
+      const res = await client.signAndExecuteTransaction({ transaction: this.buildTx(c), signer: this.keypair, options: { showEffects: true } });
+      if (res.effects?.status.status !== "success") throw new Error(`anchor transaction failed: ${res.effects?.status.error ?? "unknown"}`);
+      await client.waitForTransaction({ digest: res.digest });
+      return res.digest;
+    }
+    const client = suiGrpc(this.network);
+    const res = await client.signAndExecuteTransaction({ transaction: this.buildTx(c), signer: this.keypair });
+    if (res.$kind !== "Transaction") throw new Error(`anchor transaction failed: ${JSON.stringify(res.FailedTransaction?.status)}`);
+    await client.waitForTransaction({ digest: res.Transaction.digest });
+    return res.Transaction.digest;
+  }
+
+  async publish(c: Commit): Promise<Anchor | null> {
+    const digest = await this.send(c);
+    // The checkpoint can lag execution by a moment; retry briefly.
+    let t: AnchoredRead = {};
+    for (let i = 0; i < 6 && !t.checkpoint; i++) {
+      t = await this.reader.readAnchored(digest, this.eventType);
+      if (!t.checkpoint) await new Promise((r) => setTimeout(r, 1500));
+    }
+    const anchor: Anchor = { method: "move-event", objectId: this.opts.packageId, txDigest: digest, checkpoint: t.checkpoint, timestampMs: t.timestampMs };
+    if (this.network !== "mainnet") anchor.network = this.network;
+    return anchor;
   }
 
   async find(): Promise<Anchor | null> {
     return null; // option B anchors are published, not discovered
   }
 
-  async check(anchor: Anchor, _blobId: string, c: Commit): Promise<AnchorCheck> {
-    return checkMoveAnchor(this.opts.tatum, anchor, c);
+  async check(anchor: Anchor, blobId: string, c: Commit): Promise<AnchorCheck> {
+    if (anchor.method === "walrus-blob") {
+      return this.opts.blobAnchorer ? this.opts.blobAnchorer.check(anchor, blobId, c) : { ok: false, detail: "Walrus Blob anchor but no Walrus Memory account configured" };
+    }
+    const net = anchor.network ?? "mainnet";
+    if (net === this.network) return checkMoveAnchor(this.reader, anchor, c);
+    if (net === "mainnet" && !this.opts.tatum) return { ok: false, detail: "mainnet anchor but no Tatum key configured" };
+    return checkMoveAnchor(net === "mainnet" ? this.opts.tatum! : new GrpcEventReader(net), anchor, c);
   }
 }
 
-/** Re-reads an `Anchored` event through Tatum and compares it with the commit. */
-export async function checkMoveAnchor(tatum: TatumSui, anchor: Anchor, c: Commit): Promise<AnchorCheck> {
-  const tx = await tatum.rpc<{ checkpoint?: string; timestampMs?: string; events?: { type: string; parsedJson?: Record<string, unknown> }[] }>("sui_getTransactionBlock", [anchor.txDigest, { showEvents: true }]);
-  const ev = tx.events?.find((e) => e.type === `${anchor.objectId}::anchor::Anchored`);
-  if (!ev?.parsedJson) return { ok: false, detail: `no Anchored event in tx ${anchor.txDigest}` };
-  const hex = (v: unknown) => (Array.isArray(v) ? Buffer.from(v as number[]).toString("hex") : typeof v === "string" ? Buffer.from(v, "base64").toString("hex") : "");
-  const j = ev.parsedJson;
-  if (hex(j.commit_id) !== c.id) return { ok: false, detail: "event commit_id differs from this commit" };
-  if (hex(j.merkle_root) !== c.manifest.merkleRoot) return { ok: false, detail: "event merkle_root differs from this commit" };
-  if (hex(j.agent_pubkey) !== c.manifest.agentPubKey) return { ok: false, detail: "event names a different agent key" };
-  return { ok: true, detail: `Anchored event: root ${c.manifest.merkleRoot.slice(0, 10)}… public in checkpoint ${tx.checkpoint}`, timestampMs: Number(tx.timestampMs ?? 0) };
+/** Re-reads an `Anchored` event and compares it with the commit. Accepts a Tatum client (mainnet) or any reader. */
+export async function checkMoveAnchor(source: TatumSui | AnchoredEventReader, anchor: Anchor, c: Commit): Promise<AnchorCheck> {
+  const reader = "readAnchored" in source ? source : tatumEventReader(source);
+  const r = await reader.readAnchored(anchor.txDigest, `${anchor.objectId}::anchor::Anchored`);
+  const net = anchor.network && anchor.network !== "mainnet" ? ` (${anchor.network})` : "";
+  if (!r.event) return { ok: false, detail: `no Anchored event in tx ${anchor.txDigest}${net}` };
+  if (r.event.commitId !== c.id) return { ok: false, detail: "event commit_id differs from this commit" };
+  if (r.event.merkleRoot !== c.manifest.merkleRoot) return { ok: false, detail: "event merkle_root differs from this commit" };
+  if (r.event.agentPubKey !== c.manifest.agentPubKey) return { ok: false, detail: "event names a different agent key" };
+  return { ok: true, detail: `Anchored event: root ${c.manifest.merkleRoot.slice(0, 10)}… public in checkpoint ${r.checkpoint}${net}`, timestampMs: r.timestampMs };
 }

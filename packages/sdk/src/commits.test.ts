@@ -162,4 +162,30 @@ describe("move-event anchors", () => {
     expect((await checkMoveAnchor(fakeTatum(c.manifest.merkleRoot), anchor, c)).ok).toBe(true);
     expect((await checkMoveAnchor(fakeTatum("00".repeat(32)), anchor, c)).detail).toMatch(/merkle_root differs/);
   });
+
+  it("checkMoveAnchor works with any event reader (testnet path)", async () => {
+    const { checkMoveAnchor } = await import("./anchor.js");
+    const ep = e.observe({ source: "user", data: 2 });
+    create("b", "B", [ep.id]);
+    const c = await e.commit("two");
+    const reader = (agent: string) => ({ readAnchored: async () => ({ checkpoint: "7", event: { commitId: c.id, merkleRoot: c.manifest.merkleRoot, agentPubKey: agent } }) });
+    const anchor = { method: "move-event" as const, objectId: "0xpkg", txDigest: "D", network: "testnet" as const };
+    const ok = await checkMoveAnchor(reader(c.manifest.agentPubKey), anchor, c);
+    expect(ok.ok).toBe(true);
+    expect(ok.detail).toMatch(/testnet/);
+    expect((await checkMoveAnchor(reader("ab".repeat(32)), anchor, c)).detail).toMatch(/different agent/);
+  });
+
+  it("MoveAnchorer hands old Walrus Blob anchors to the blob anchorer", async () => {
+    const { MoveAnchorer } = await import("./anchor.js");
+    const blob = { find: async () => null, check: async () => ({ ok: true, detail: "blob checked" }) };
+    const phrase = "test test test test test test test test test test test junk";
+    const m = new MoveAnchorer({ network: "testnet", packageId: "0xpkg", mnemonic: phrase, blobAnchorer: blob });
+    const ep = e.observe({ source: "user", data: 3 });
+    create("c", "C", [ep.id]);
+    const c = await e.commit("three");
+    const r = await m.check({ method: "walrus-blob", objectId: "0xobj", txDigest: "T" }, "blob", c);
+    expect(r).toEqual({ ok: true, detail: "blob checked" });
+    expect(() => new MoveAnchorer({ packageId: "0xpkg", mnemonic: phrase })).toThrow(/Tatum/);
+  });
 });

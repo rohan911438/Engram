@@ -14,3 +14,4 @@ demo/
 
 # per-wallet agent repos (server)
 data/
+contracts/*/build/

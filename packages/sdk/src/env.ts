@@ -9,6 +9,7 @@ import { TatumSui } from "./tatum.js";
  *   TATUM_API_KEY (or TATUM_API_KEY_MAINNET)            Tatum Sui RPC
  *   GEMINI_API_KEYS (comma-separated), GEMINI_MODEL     consolidation LLM
  *   ENGRAM_ANCHOR_PACKAGE + SUI_MNEMONIC                anchor commits with the engram_anchor Move module
+ *   ENGRAM_ANCHOR_NETWORK                               mainnet (default, via Tatum) or testnet
  */
 export interface EnvServices {
   remote: RemoteMemory;
@@ -26,11 +27,12 @@ export function servicesFromEnv(env: Record<string, string | undefined> = proces
   const accountId = env.MEMWAL_ACCOUNT_ID;
   let anchorer: Anchorer | undefined = tatum && accountId ? new WalrusBlobAnchorer(tatum, accountId) : undefined;
   let anchorWarning: string | undefined;
-  if (tatum && tatumKey && env.ENGRAM_ANCHOR_PACKAGE) {
+  if (env.ENGRAM_ANCHOR_PACKAGE) {
     try {
-      anchorer = new MoveAnchorer({ tatum, tatumApiKey: tatumKey, packageId: env.ENGRAM_ANCHOR_PACKAGE, mnemonic: env.SUI_MNEMONIC ?? "" });
+      const network = env.ENGRAM_ANCHOR_NETWORK === "testnet" ? "testnet" : "mainnet";
+      anchorer = new MoveAnchorer({ network, tatum, tatumApiKey: tatumKey, packageId: env.ENGRAM_ANCHOR_PACKAGE, mnemonic: env.SUI_MNEMONIC ?? "", blobAnchorer: anchorer });
     } catch (err) {
-      anchorWarning = `ENGRAM_ANCHOR_PACKAGE set but SUI_MNEMONIC is unusable (${(err as Error).message}) — using Walrus Blob anchoring`;
+      anchorWarning = `ENGRAM_ANCHOR_PACKAGE set but Move anchoring is unusable (${(err as Error).message}) — using Walrus Blob anchoring`;
     }
   }
   return {

@@ -130,6 +130,13 @@ mind.forget("ep_…");                               // provable forgetting
 - **Anchoring:** every Walrus Memory write registers a Walrus `Blob` object on Sui owned by the
   account owner. Engram finds the manifest's Blob object and its certifying transaction through
   Tatum, and `verify` re-reads both (blob ID, certification, owner, checkpoint, time).
+- **Public anchoring (Move):** with `ENGRAM_ANCHOR_PACKAGE` set, every commit also calls
+  [`engram_anchor::anchor`](contracts/engram_anchor/sources/anchor.move), which emits an `Anchored`
+  event carrying the commit ID, Merkle root and agent key in the clear. `verify` re-reads the event
+  (mainnet through Tatum, testnet through the public Sui gRPC node) and compares all three.
+  Publish your own copy with `npx tsx packages/sdk/scripts/publish-anchor.ts testnet|mainnet`
+  (needs the `sui` CLI for the build and `SUI_MNEMONIC` with a little SUI). Testnet package:
+  `0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b`.
 - **Consolidation safety:** LLM output is validated — evidence must be real episode IDs, edits must
   target existing beliefs; rejected proposals get one repair round with the reason.
 - **Crypto-shredding:** episode keys are wrapped by a master key in `.engram/vault.json`;
@@ -144,8 +151,8 @@ More: [`docs/spike-findings.md`](docs/spike-findings.md) (what we measured on Wa
   (they're retracted, not erased).
 - **Anchoring** (option A) proves *when* a manifest blob was certified on Sui and that the
   account owner holds it. The manifest bytes on Walrus are Seal-encrypted by Walrus Memory, so the
-  content check goes through Walrus Memory recall. A dedicated Move module that emits the Merkle
-  root publicly is the planned upgrade.
+  content check goes through Walrus Memory recall. The optional Move anchor (above) puts the Merkle
+  root itself on chain, readable by anyone.
 - Keys (`agent.key`, `master.key`) live in `.engram/` on disk — fine for a hackathon, KMS/Seal later.
 
 ## Repo layout

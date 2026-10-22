@@ -101,6 +101,8 @@ export interface Anchor {
   txDigest: string;
   checkpoint?: string;
   timestampMs?: number;
+  /** move-event: Sui network the anchor lives on. Absent means mainnet. */
+  network?: "mainnet" | "testnet";
 }
 
 export interface Commit {

@@ -6,7 +6,7 @@ use sui::clock;
 
 fun h(b: u8): vector<u8> {
     let mut v = vector[];
-    let mut i = 0;
+    let mut i = 0u64;
     while (i < 32) { v.push_back(b); i = i + 1; };
     v
 }
