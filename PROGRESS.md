@@ -90,3 +90,11 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 - Web: `/link` approval page, "Your agents" switcher, read-only linked-agent views (Mind/History/Receipts/Verify) at `/app/linked/<id>`. Engram can open a repo read-only (no keys) from a bundle.
 - Live: linked the CLI test agent → 2 commits synced, 2 testnet anchors re-read by the server. Tests: SDK 62 · CLI 10 · money-ops 6 · server 14.
 - npm packages need a 0.2.0 release for `link`/`sync` (user runs publish with OTP).
+
+## Pre-production check (22 Oct, release 0.2.0) — all green
+1. Automated tests: SDK 62 · CLI 10 · money-ops 6 · server 14.
+2. Live CLI/SDK from the packed 0.2.0 tarballs in a clean folder: init → observe → sleep (Gemini) → commit (Walrus + testnet anchor) → SDK `wrap` receipt → verify (all 10 checks incl. Walrus + Sui) → forget → commit (tombstone) → log/diff/blame → export + audit (2 anchors re-read) → link + approve with wallet → server-verified sync → commit auto-sync (3 commits) → MCP tools live.
+3. Hosted web agent e2e: wallet sign-in → tell → run → commit anchored → verify HEAD passed.
+4. Public demo (real-transaction story): CRITICAL scam receipt verifies end to end via the API.
+5. /api/health: Walrus ok, Tatum gRPC ok, LLM ok.
+6. Docker image rebuilt: serves the live demo, healthy, no story-wallet keys inside.
