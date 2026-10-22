@@ -432,29 +432,29 @@ const DEV_CARDS = [
     icon: Terminal2,
     title: "CLI",
     text: "git for your agent's mind: commit, log, diff, blame, bisect, verify, forget, audit.",
-    code: "npx @rohankumar4179/engram init my-agent
-engram observe -s user \"rent is 450 on the 1st\"
-engram sleep && engram commit -m \"week 1\"
-engram verify HEAD",
+    code: `npx @rohankumar4179/engram init my-agent
+engram observe -s user "rent is 450 on the 1st"
+engram sleep && engram commit -m "week 1"
+engram verify HEAD`,
   },
   {
     icon: Code2,
     title: "SDK",
     text: "Wrap the agent you already have: relevant beliefs in, a signed receipt out.",
-    code: "import { engram } from \"@rohankumar4179/engram-sdk\";
+    code: `import { engram } from "@rohankumar4179/engram-sdk";
 
-const mind = engram({ agent: \"money-ops\" });
+const mind = engram({ agent: "money-ops" });
 const agent = mind.wrap(myAgent);
-await agent(tx);   // agent.lastReceipt → r_…",
+await agent(tx);   // agent.lastReceipt → r_…`,
   },
   {
     icon: Plug,
     title: "MCP",
     text: "Give Claude Code, Cursor or Claude Desktop beliefs, blame, commit and verify as tools.",
-    code: "{ \"mcpServers\": { \"engram\": {
-  \"command\": \"npx\",
-  \"args\": [\"@rohankumar4179/engram\", \"mcp\"]
-} } }",
+    code: `{ "mcpServers": { "engram": {
+  "command": "npx",
+  "args": ["@rohankumar4179/engram", "mcp"]
+} } }`,
   },
 ];
 
