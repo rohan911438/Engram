@@ -2,7 +2,7 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { inspectApi, type Engram } from "@engram/sdk";
+import { inspectApi, type Engram } from "@rohankumar4179/engram-sdk";
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",

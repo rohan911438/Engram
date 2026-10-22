@@ -6,7 +6,7 @@ import {
   readMemwalAccount,
   suiGrpc,
   type MemwalAccountInfo,
-} from "@engram/sdk";
+} from "@rohankumar4179/engram-sdk";
 import type { Tenant } from "./tenants.js";
 
 /** Chain access for storage setup (swapped for a fake in tests). */

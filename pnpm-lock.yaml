@@ -26,12 +26,12 @@ importers:
       '@engram/money-ops':
         specifier: workspace:*
         version: link:../../examples/money-ops
-      '@engram/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       '@mysten/sui':
         specifier: ^2.37.0
         version: 2.37.0(typescript@5.9.3)
+      '@rohankumar4179/engram-sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       dotenv:
         specifier: ^18.0.8
         version: 18.0.8
@@ -102,7 +102,7 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
     devDependencies:
-      '@engram/sdk':
+      '@rohankumar4179/engram-sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
       '@types/node':
@@ -129,12 +129,12 @@ importers:
 
   examples/money-ops:
     dependencies:
-      '@engram/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       '@mysten/sui':
         specifier: ^2.37.0
         version: 2.37.0(typescript@5.9.3)
+      '@rohankumar4179/engram-sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       dotenv:
         specifier: ^18.0.8
         version: 18.0.8
@@ -144,12 +144,12 @@ importers:
 
   packages/cli:
     dependencies:
-      '@engram/sdk':
-        specifier: workspace:*
-        version: link:../sdk
       '@modelcontextprotocol/sdk':
         specifier: 1.32.1
         version: 1.32.1(zod@4.1.12)
+      '@rohankumar4179/engram-sdk':
+        specifier: workspace:*
+        version: link:../sdk
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -193,15 +193,15 @@ importers:
 
   spikes:
     dependencies:
-      '@engram/sdk':
-        specifier: workspace:*
-        version: link:../packages/sdk
       '@mysten-incubation/memwal':
         specifier: ^0.1.8
         version: 0.1.8(@mysten/seal@1.5.1(@mysten/sui@2.37.0(typescript@5.9.3)))(@mysten/sui@2.37.0(typescript@5.9.3))(zod@4.6.7)
       '@mysten/sui':
         specifier: ^2.37.0
         version: 2.37.0(typescript@5.9.3)
+      '@rohankumar4179/engram-sdk':
+        specifier: workspace:*
+        version: link:../packages/sdk
       dotenv:
         specifier: ^18.0.8
         version: 18.0.8

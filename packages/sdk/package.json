@@ -1,5 +1,5 @@
 {
-  "name": "@engram/sdk",
+  "name": "@rohankumar4179/engram-sdk",
   "version": "0.1.0",
   "description": "Git for agent memory — versioned, provable memory on Walrus Memory",
   "type": "module",

@@ -1,10 +1,10 @@
-# @engram/sdk
+# @rohankumar4179/engram-sdk
 
 Git for agent memory: episodes → beliefs (LLM), signed commits on Walrus Memory anchored on Sui,
 decision receipts with Merkle proofs, `verify`, and provable `forget`.
 
 ```ts
-import { engram } from "@engram/sdk";
+import { engram } from "@rohankumar4179/engram-sdk";
 
 const mind = engram({ agent: "money-ops" });          // keys from .env (Walrus Memory, Tatum, Gemini)
 const agent = mind.wrap(myAgent, { used: (out) => out.beliefIds });

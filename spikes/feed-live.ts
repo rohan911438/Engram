@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 import { join } from "node:path";
-import { TatumSui } from "@engram/sdk";
+import { TatumSui } from "@rohankumar4179/engram-sdk";
 import { WalletFeed, describe } from "../examples/money-ops/src/feed.js";
 config({ path: join(import.meta.dirname, "../.env"), quiet: true });
 const tatum = new TatumSui({ apiKey: process.env.TATUM_API_KEY_MAINNET! });

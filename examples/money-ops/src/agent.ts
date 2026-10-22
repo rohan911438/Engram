@@ -1,4 +1,4 @@
-import type { Belief, Engram, LLM, Receipt } from "@engram/sdk";
+import type { Belief, Engram, LLM, Receipt } from "@rohankumar4179/engram-sdk";
 import { describe, type WalletEvent } from "./feed.js";
 
 export interface Assessment {

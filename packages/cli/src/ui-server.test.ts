@@ -3,7 +3,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { Engram, FakeAnchorer, InMemoryRemote } from "@engram/sdk";
+import { Engram, FakeAnchorer, InMemoryRemote } from "@rohankumar4179/engram-sdk";
 import { createUiServer } from "./ui-server.js";
 
 let dir: string;

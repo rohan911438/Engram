@@ -81,7 +81,7 @@ engram ui                       # the inspector
 ### SDK
 
 ```ts
-import { engram } from "@engram/sdk";
+import { engram } from "@rohankumar4179/engram-sdk";
 
 const mind = engram({ agent: "money-ops" });       // Walrus Memory, Tatum, Gemini from .env
 
@@ -104,7 +104,7 @@ await mind.verify(agent.lastReceipt!.id);          // signature → proofs → W
 ### MCP (Claude Code, Cursor, Claude Desktop)
 
 ```json
-{ "mcpServers": { "engram": { "command": "npx", "args": ["@engram/cli", "mcp", "-C", "/path/to/project"] } } }
+{ "mcpServers": { "engram": { "command": "npx", "args": ["@rohankumar4179/engram", "mcp", "-C", "/path/to/project"] } } }
 ```
 
 Tools: `engram_status`, `engram_remember`, `engram_beliefs` (by topic or at a past commit),
@@ -187,7 +187,7 @@ More: [`docs/spike-findings.md`](docs/spike-findings.md) (what we measured on Wa
 ## Repo layout
 
 ```
-packages/sdk        @engram/sdk — core library (49+ tests)
+packages/sdk        @rohankumar4179/engram-sdk — core library (49+ tests)
 packages/cli        engram CLI + local inspector server
 apps/inspector      web inspector (React, shadcn/ui, React Flow)
 examples/money-ops  wallet-watching agent (Tatum feed, replay story)

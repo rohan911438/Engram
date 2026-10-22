@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { CombinedRemote, Engram, NothingToCommitError, delegateFromSecret, newDelegateKey, type Anchorer, type LLM, type RemoteMemory, type TatumSui } from "@engram/sdk";
+import { CombinedRemote, Engram, NothingToCommitError, delegateFromSecret, newDelegateKey, type Anchorer, type LLM, type RemoteMemory, type TatumSui } from "@rohankumar4179/engram-sdk";
 import { CONTEXT, MoneyOpsAgent, WalletFeed, describe, type Handled } from "@engram/money-ops";
 
 export interface Services {

@@ -1,5 +1,5 @@
 {
-  "name": "@engram/cli",
+  "name": "@rohankumar4179/engram",
   "version": "0.1.0",
   "description": "engram — git for agent memory",
   "type": "module",
@@ -18,7 +18,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@engram/sdk": "workspace:*",
+    "@rohankumar4179/engram-sdk": "workspace:*",
     "@modelcontextprotocol/sdk": "1.32.1",
     "commander": "^15.0.0",
     "dotenv": "^18.0.8",

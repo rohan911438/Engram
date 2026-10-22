@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { config } from "dotenv";
-import { servicesFromEnv } from "@engram/sdk";
+import { servicesFromEnv } from "@rohankumar4179/engram-sdk";
 import { createApp } from "./app.js";
 import { Tenant, Tenants } from "./tenants.js";
 

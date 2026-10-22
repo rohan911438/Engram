@@ -1,7 +1,7 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
-import { inspectApi, type TatumSui } from "@engram/sdk";
+import { inspectApi, type TatumSui } from "@rohankumar4179/engram-sdk";
 import { WalletAuth } from "./auth.js";
 import type { Tenant, Tenants } from "./tenants.js";
 import { DEFAULT_LIMITS, RateLimiter, bucketFor, clientIp, probeHealth, type Health } from "./guard.js";

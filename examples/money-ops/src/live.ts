@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
-import { TatumSui, suiGrpc, type SuiNetwork } from "@engram/sdk";
+import { TatumSui, suiGrpc, type SuiNetwork } from "@rohankumar4179/engram-sdk";
 
 /**
  * A real wallet story on Sui. Five wallets (owner, employer, landlord,

@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { Engram, FakeAnchorer, InMemoryRemote } from "@engram/sdk";
+import { Engram, FakeAnchorer, InMemoryRemote } from "@rohankumar4179/engram-sdk";
 
 /**
  * Runs the real CLI (src/main.ts through tsx) as a child process against a repo

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { Engram, FakeAnchorer, InMemoryRemote, ScriptedLLM } from "@engram/sdk";
+import { Engram, FakeAnchorer, InMemoryRemote, ScriptedLLM } from "@rohankumar4179/engram-sdk";
 import { createApp } from "./app.js";
 import { Tenant, Tenants, agentName } from "./tenants.js";
 

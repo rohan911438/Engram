@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe as group, expect, it } from "vitest";
-import { Engram, FakeAnchorer, InMemoryRemote, ScriptedLLM, type TatumSui } from "@engram/sdk";
+import { Engram, FakeAnchorer, InMemoryRemote, ScriptedLLM, type TatumSui } from "@rohankumar4179/engram-sdk";
 import { MoneyOpsAgent } from "./agent.js";
 import { WalletFeed, describe, type WalletEvent } from "./feed.js";
 

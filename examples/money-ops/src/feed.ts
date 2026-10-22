@@ -1,4 +1,4 @@
-import type { TatumSui } from "@engram/sdk";
+import type { TatumSui } from "@rohankumar4179/engram-sdk";
 
 /** One wallet movement, in human units. This is what becomes an episode. */
 export interface WalletEvent {

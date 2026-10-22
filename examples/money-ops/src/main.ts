@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { config } from "dotenv";
 import pc from "picocolors";
-import { Engram, FakeAnchorer, InMemoryRemote, NothingToCommitError, servicesFromEnv, type LLM } from "@engram/sdk";
+import { Engram, FakeAnchorer, InMemoryRemote, NothingToCommitError, servicesFromEnv, type LLM } from "@rohankumar4179/engram-sdk";
 import { CONTEXT, MoneyOpsAgent, type Handled } from "./agent.js";
 import { describe, WalletFeed, type WalletEvent } from "./feed.js";
 import { SCENARIO } from "./scenario.js";

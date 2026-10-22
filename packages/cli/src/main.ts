@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { Command } from "commander";
 import { config as loadEnv } from "dotenv";
 import pc from "picocolors";
-import { Engram, NothingToCommitError, beliefKey, exportAudit, servicesFromEnv, verifyAudit, type AuditBundle, type Belief, type EpisodeSource, type VerifyReport } from "@engram/sdk";
+import { Engram, NothingToCommitError, beliefKey, exportAudit, servicesFromEnv, verifyAudit, type AuditBundle, type Belief, type EpisodeSource, type VerifyReport } from "@rohankumar4179/engram-sdk";
 
 const program = new Command();
 program

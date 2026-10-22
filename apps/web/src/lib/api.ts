@@ -1,4 +1,4 @@
-import type { Belief, Commit, EpisodeContent, Receipt, VerifyReport } from "@engram/sdk";
+import type { Belief, Commit, EpisodeContent, Receipt, VerifyReport } from "@rohankumar4179/engram-sdk";
 
 export type { Belief, Commit, Receipt, VerifyReport };
 

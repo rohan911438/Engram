@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { NothingToCommitError, beliefKey, type Belief, type Engram, type LLM, type VerifyReport } from "@engram/sdk";
+import { NothingToCommitError, beliefKey, type Belief, type Engram, type LLM, type VerifyReport } from "@rohankumar4179/engram-sdk";
 
 /**
  * `engram mcp` — Engram's git-style memory tools for MCP clients (Claude Code,
