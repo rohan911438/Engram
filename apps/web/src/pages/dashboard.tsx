@@ -85,9 +85,9 @@ function Hero({ s }: { s: Summary }) {
           </div>
         </div>
         {s.headCommit?.anchor ? (
-          <a href={links.suiTx(s.headCommit.anchor.txDigest)} target="_blank" rel="noreferrer" className="group rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.05] px-4 py-3 text-xs transition hover:border-emerald-400/40">
+          <a href={links.suiTx(s.headCommit.anchor.txDigest, s.headCommit.anchor.network)} target="_blank" rel="noreferrer" className="group rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.05] px-4 py-3 text-xs transition hover:border-emerald-400/40">
             <div className="flex items-center gap-1.5 text-emerald-300"><CircleCheck className="size-3.5" /> Anchored on Sui</div>
-            <div className="mt-1 font-mono text-foreground">checkpoint {Number(s.headCommit.anchor.checkpoint).toLocaleString("en-US")}</div>
+            <div className="mt-1 font-mono text-foreground">checkpoint {Number(s.headCommit.anchor.checkpoint).toLocaleString("en-US")}{s.headCommit.anchor.network === "testnet" ? " · testnet" : ""}</div>
             <div className="mt-0.5 text-muted-foreground group-hover:text-foreground">{s.headCommit.anchor.timestampMs ? ago(s.headCommit.anchor.timestampMs) : ""} · view tx ↗</div>
           </a>
         ) : (

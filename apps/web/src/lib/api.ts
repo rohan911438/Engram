@@ -130,7 +130,7 @@ export const server = {
 // ---- links to public explorers --------------------------------------------
 
 export const links = {
-  suiTx: (digest: string) => `https://suiscan.xyz/mainnet/tx/${digest}`,
+  suiTx: (digest: string, network = "mainnet") => `https://suiscan.xyz/${network}/tx/${digest}`,
   suiObject: (id: string) => `https://suiscan.xyz/mainnet/object/${id}`,
   suiAccount: (a: string) => `https://suiscan.xyz/mainnet/account/${a}`,
   walrusBlob: (blobId: string) => `https://walruscan.com/mainnet/blob/${blobId}`,

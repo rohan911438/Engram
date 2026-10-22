@@ -76,8 +76,8 @@ export function OverviewView({ summary, onOpenBelief }: { summary: Summary; onOp
             <div className="rounded-xl border bg-background/50 px-4 py-3 text-xs backdrop-blur">
               <div className="text-muted-foreground">Last anchored on Sui</div>
               <div className="mt-1 flex items-center gap-2">
-                <Badge variant="outline" className="border-ok/40 text-ok">checkpoint {Number(head.anchor.checkpoint).toLocaleString("en-US")}</Badge>
-                <Hash value={head.anchor.txDigest} href={links.suiTx(head.anchor.txDigest)} />
+                <Badge variant="outline" className="border-ok/40 text-ok">checkpoint {Number(head.anchor.checkpoint).toLocaleString("en-US")}{head.anchor.network === "testnet" ? " · testnet" : ""}</Badge>
+                <Hash value={head.anchor.txDigest} href={links.suiTx(head.anchor.txDigest, head.anchor.network)} />
               </div>
               {head.anchor.timestampMs ? <div className="mt-1 text-muted-foreground">{fmtTime(head.anchor.timestampMs)}</div> : null}
             </div>

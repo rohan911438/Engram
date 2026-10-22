@@ -57,8 +57,8 @@ export function HistoryView({ onOpenBelief }: { onOpenBelief: (ref: string) => v
                 <div className="flex shrink-0 flex-col items-end gap-1 text-xs">
                   {c.anchor ? (
                     <>
-                      <Badge variant="outline" className="border-ok/40 text-ok">anchored · checkpoint {Number(c.anchor.checkpoint).toLocaleString("en-US")}</Badge>
-                      <span onClick={(e) => e.stopPropagation()}><Hash value={c.anchor.txDigest} href={links.suiTx(c.anchor.txDigest)} /></span>
+                      <Badge variant="outline" className="border-ok/40 text-ok">anchored · checkpoint {Number(c.anchor.checkpoint).toLocaleString("en-US")}{c.anchor.network === "testnet" ? " · testnet" : ""}</Badge>
+                      <span onClick={(e) => e.stopPropagation()}><Hash value={c.anchor.txDigest} href={links.suiTx(c.anchor.txDigest, c.anchor.network)} /></span>
                     </>
                   ) : (
                     <Badge variant="outline" className="text-warn">not anchored</Badge>
