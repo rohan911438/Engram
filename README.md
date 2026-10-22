@@ -65,6 +65,15 @@ Amounts are small: the whole story moves about 0.75 SUI.
 
 ## Quick start
 
+From npm:
+
+```bash
+npx @rohankumar4179/engram init my-agent        # CLI
+npm i @rohankumar4179/engram-sdk                # SDK
+```
+
+From source:
+
 ```bash
 pnpm install && pnpm build
 cp .env.example .env            # Walrus Memory, Tatum, Gemini keys

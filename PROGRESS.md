@@ -81,4 +81,5 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 - CLI tests run the real CLI as child processes (10 tests). Packages pack + install cleanly; `npx engram` works from the tarball.
 - **Real testnet story finished** after the relayer recovered: Month 5 quiet on rent, CRITICAL on the payment to the scammer (receipt r_5080ccb4fd9c3869 verifies end to end, Walrus + Sui).
 - Tests: SDK 62 · CLI 10 · money-ops 6 · server 13.
-- Still open: npm publish (needs the user's npm login + scope choice), paid `share` (Mainnet funds).
+- **Published to npm:** `@rohankumar4179/engram-sdk@0.1.0` and `@rohankumar4179/engram@0.1.0` (CLI). Verified from a clean install: `npx @rohankumar4179/engram`, SDK `engram()` round trip.
+- Still open: paid `share` (Mainnet funds).
