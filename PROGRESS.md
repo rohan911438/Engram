@@ -73,3 +73,12 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 1. ~1.5 SUI on **Mainnet** (wallet you control, phrase never in chat): Mainnet anchor publish, Mainnet live story (~0.75 SUI), storage-setup test (~0.02 SUI).
 2. Gemini keys from **different Google Cloud projects** (or billing) — free tier is ~20 requests/day/model.
 3. Hosting: `railway login` (or another Docker host).
+
+## Day 2, evening (22 Oct) — SDK + CLI completed against Idea/04
+- SDK `engram()` API from the plan: `wrap` (beliefs in, signed receipt out), `beliefs({about})`, `at`, `verify` (receipt or commit), `forget`, `log/diff/blame`.
+- `engram export --audit` / `engram audit <file>`: self-contained audit bundle, verified without the repo (incl. Sui anchors).
+- `engram mcp`: MCP server with 10 tools; tested end to end with the MCP client SDK.
+- CLI tests run the real CLI as child processes (10 tests). Packages pack + install cleanly; `npx engram` works from the tarball.
+- **Real testnet story finished** after the relayer recovered: Month 5 quiet on rent, CRITICAL on the payment to the scammer (receipt r_5080ccb4fd9c3869 verifies end to end, Walrus + Sui).
+- Tests: SDK 62 · CLI 10 · money-ops 6 · server 13.
+- Still open: npm publish (needs the user's npm login + scope choice), paid `share` (Mainnet funds).

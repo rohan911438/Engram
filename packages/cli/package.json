@@ -7,7 +7,8 @@
     "engram": "./dist/main.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "license": "MIT",
   "scripts": {
@@ -23,5 +24,25 @@
     "dotenv": "^18.0.8",
     "picocolors": "^1.1.1",
     "zod": "4.1.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rohan911438/Engram.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/rohan911438/Engram#readme",
+  "keywords": [
+    "agents",
+    "memory",
+    "walrus",
+    "sui",
+    "cli",
+    "mcp"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

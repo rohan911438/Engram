@@ -81,25 +81,35 @@ engram ui                       # the inspector
 ### SDK
 
 ```ts
-import { Engram, servicesFromEnv } from "@engram/sdk";
+import { engram } from "@engram/sdk";
 
-const s = servicesFromEnv();                       // Walrus Memory, Tatum, Gemini from .env
-const mind = Engram.open({ remote: s.remote, anchorer: s.anchorer });
+const mind = engram({ agent: "money-ops" });       // Walrus Memory, Tatum, Gemini from .env
+
+// Wrap your existing agent: relevant committed beliefs in, a signed receipt out.
+const agent = mind.wrap(async (tx, beliefs) => myAgent.decide(tx, beliefs), {
+  used: (decision) => decision.beliefIds,
+});
+const decision = await agent(tx);
+agent.lastReceipt;                                 // r_… with Merkle proofs into HEAD
 
 mind.observe({ source: "tatum", data: tx });       // encrypted episode
-await mind.sleep({ llm: s.llm() });                // consolidate → beliefs
+await mind.sleep();                                // consolidate → beliefs
 await mind.commit("weekly");                       // prove
-
-// Wrap any decision: relevant committed beliefs in, signed receipt out.
-const { result, receipt } = await mind.act({ query: "payment to 0x7a11", input: tx }, async (beliefs) => {
-  const decision = await myAgent.decide(tx, beliefs);
-  return { action: decision.summary, used: decision.beliefIds, result: decision };
-});
-
-await mind.verifyReceipt(receipt!.id);             // signature → proofs → Walrus → Sui
-mind.beliefsAt("2026-10-01");                      // time travel
+await mind.beliefs({ about: "rent" });             // query
+mind.at("2026-10-01");                             // time travel
 mind.forget("ep_…");                               // provable forgetting
+await mind.verify(agent.lastReceipt!.id);          // signature → proofs → Walrus → Sui
 ```
+
+### MCP (Claude Code, Cursor, Claude Desktop)
+
+```json
+{ "mcpServers": { "engram": { "command": "npx", "args": ["@engram/cli", "mcp", "-C", "/path/to/project"] } } }
+```
+
+Tools: `engram_status`, `engram_remember`, `engram_beliefs` (by topic or at a past commit),
+`engram_sleep`, `engram_commit`, `engram_log`, `engram_diff`, `engram_blame`, `engram_forget`,
+`engram_verify`.
 
 ## Commands
 
@@ -115,6 +125,8 @@ mind.forget("ep_…");                               // provable forgetting
 | `engram verify [r_…\|commit]` | Full proof check: signatures, Merkle proofs, hash chain, Walrus, Sui |
 | `engram forget <episode>` | Destroys the episode's key, retracts what depended on it, tombstones the next commit |
 | `engram ui` | The inspector — belief graph with time slider, history, receipts, live verification |
+| `engram export --audit` · `engram audit <file>` | Audit bundle (commits, beliefs, receipts — no raw episodes) that anyone can verify without the repo, incl. Sui anchors |
+| `engram mcp` | MCP server: the commands above as tools for Claude Code, Cursor, Claude Desktop |
 
 ## How it works
 

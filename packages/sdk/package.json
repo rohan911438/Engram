@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "license": "MIT",
   "scripts": {
@@ -31,5 +32,25 @@
   },
   "devDependencies": {
     "@scure/bip39": "2.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rohan911438/Engram.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://github.com/rohan911438/Engram#readme",
+  "keywords": [
+    "agents",
+    "memory",
+    "walrus",
+    "sui",
+    "merkle",
+    "ai"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
