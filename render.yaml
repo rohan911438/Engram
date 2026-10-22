@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: engram-api
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/mode
+    disk:
+      name: engram-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ENGRAM_PUBLIC_URL
+        sync: false
+      - { key: TATUM_API_KEY_MAINNET, sync: false }
+      - { key: MEMWAL_KEY, sync: false }
+      - { key: MEMWAL_ACCOUNT_ID, sync: false }
+      - { key: MEMWAL_SERVER_URL, value: "https://relayer.memory.walrus.xyz" }
+      - { key: SUI_MNEMONIC, sync: false }
+      - { key: GEMINI_API_KEYS, sync: false }
+      - { key: GEMINI_MODEL, value: gemini-flash-latest }
+      - { key: ENGRAM_ANCHOR_PACKAGE, sync: false }
+      - { key: ENGRAM_ANCHOR_NETWORK, value: testnet }

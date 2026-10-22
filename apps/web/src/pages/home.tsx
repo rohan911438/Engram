@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { GithubLogo as Github } from "@phosphor-icons/react";
-import { ArrowRight, ArrowUpRight, BellOff, BellRing, Brain, Eraser, FileCheck2, GitCommitHorizontal, Lock, ShieldCheck, Sparkles, Wallet } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BellOff, BellRing, Brain, Code2, Eraser, FileCheck2, GitCommitHorizontal, Link2, Lock, Plug, ShieldCheck, Sparkles, SquareTerminal as Terminal2, Wallet } from "lucide-react";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
 import { AnimatedRays } from "@/components/ui/animated-rays";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
@@ -35,6 +35,8 @@ export function HomePage() {
       <Proof />
       <Divider />
       <Story />
+      <Divider />
+      <Developers />
       <FinalCta />
       <Footer />
     </div>
@@ -67,6 +69,7 @@ function Nav() {
               { label: "Features", href: "#features" },
               { label: "Proof", href: "#proof" },
               { label: "Demo", href: "#story" },
+              { label: "Developers", href: "#developers" },
             ]}
             onItemClick={(item) => document.querySelector(item.href)?.scrollIntoView({ behavior: "smooth" })}
           />
@@ -86,13 +89,13 @@ function Nav() {
 // ---- hero ----------------------------------------------------------------------
 
 const VERIFY_LINES: { head?: boolean; text: string; detail?: string }[] = [
-  { head: true, text: "$ engram verify r_00c49f36" },
-  { text: "receipt signature", detail: "ALERT[critical] 250 USDC → 0x9bad… · signed" },
-  { text: "belief proofs", detail: "b_scammer_address@1 ∈ commit ef34bc20" },
-  { text: "merkle root", detail: "5 beliefs + 0 tombstones → 51e42471…" },
+  { head: true, text: "$ engram verify r_5080ccb4" },
+  { text: "receipt signature", detail: "ALERT[critical] 0.025 SUI → 0xcbed89… · signed" },
+  { text: "belief proofs", detail: "b_scam_address_0xcbed@1 ∈ commit 19040b51" },
+  { text: "merkle root", detail: "5 beliefs + 0 tombstones → 392bf9cb…" },
   { text: "history", detail: "2 earlier commits, signed + hash-linked" },
   { text: "walrus", detail: "manifest recalled from Walrus Memory" },
-  { text: "sui anchor", detail: "certified · checkpoint 336,539,950 · Tatum" },
+  { text: "sui anchor", detail: "Anchored event · checkpoint 397,926,925" },
 ];
 
 function Terminal() {
@@ -259,7 +262,7 @@ const STEPS = [
   { icon: Wallet, title: "Observe", text: "Every wallet event and every word you tell it becomes an episode — encrypted with its own key, stored on Walrus Memory.", tag: "AES-256-GCM · Walrus" },
   { icon: Brain, title: "Sleep", text: "The agent consolidates episodes into beliefs with confidence and evidence, and revises them when you correct it.", tag: "LLM · grounded in episodes" },
   { icon: GitCommitHorizontal, title: "Commit", text: "Beliefs become a Merkle root, signed by the agent and anchored on Sui. History you can diff, blame and bisect.", tag: "Ed25519 · Merkle · Sui" },
-  { icon: ShieldCheck, title: "Prove", text: "Each decision carries a signed receipt naming the exact beliefs it used. Anyone can verify it end to end.", tag: "Receipts · Tatum Sui RPC" },
+  { icon: ShieldCheck, title: "Prove", text: "Each decision carries a signed receipt naming the exact beliefs it used. Anyone can verify it end to end.", tag: "Receipts · Sui via Tatum" },
 ];
 
 function HowItWorks() {
@@ -366,10 +369,10 @@ function Proof() {
 // ---- story -------------------------------------------------------------------------------
 
 const PHASES = [
-  { label: "July", note: "Knows nothing. Asks about everything.", alerts: 4, total: 4 },
-  { label: "Aug – Sep", note: "Learned rent, salary, subscription and swaps. Stays quiet.", alerts: 0, total: 8 },
-  { label: "October", note: "Rent rises → warn. 1,800 USDC to a stranger at 3 a.m. → critical.", alerts: 2, total: 2 },
-  { label: "November", note: "New rent accepted. Scam address caught from memory.", alerts: 1, total: 2 },
+  { label: "Month 1", note: "Knows nothing. Asks about salary, rent and a subscription.", alerts: 3, total: 3 },
+  { label: "Months 2–3", note: "Learned the owner's habits. Stays quiet, citing each belief.", alerts: 0, total: 6 },
+  { label: "Month 4", note: "Rent rises → warn. 0.18 SUI to an unknown address → critical.", alerts: 2, total: 2 },
+  { label: "Month 5", note: "New rent accepted. The scam address is caught from memory.", alerts: 1, total: 2 },
 ];
 
 function Story() {
@@ -381,7 +384,7 @@ function Story() {
         <SectionHead
           eyebrow="The money-ops agent"
           title={<><span className="text-headline">Same agent, same code.</span><br /><Em>Only its memory changed.</Em></>}
-          text="A wallet watcher with Engram memory. Watch how many transactions it alerts on as it learns its owner."
+          text="A wallet watcher with Engram memory, run on real Sui transfers between five wallets. Watch how many it alerts on as it learns its owner."
         />
         <div className="mt-16 grid gap-4 md:grid-cols-4">
           {PHASES.map((p, i) => (
@@ -417,6 +420,81 @@ function Story() {
             </Link>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+// ---- developers ------------------------------------------------------------------------
+
+const DEV_CARDS = [
+  {
+    icon: Terminal2,
+    title: "CLI",
+    text: "git for your agent's mind: commit, log, diff, blame, bisect, verify, forget, audit.",
+    code: "npx @rohankumar4179/engram init my-agent
+engram observe -s user \"rent is 450 on the 1st\"
+engram sleep && engram commit -m \"week 1\"
+engram verify HEAD",
+  },
+  {
+    icon: Code2,
+    title: "SDK",
+    text: "Wrap the agent you already have: relevant beliefs in, a signed receipt out.",
+    code: "import { engram } from \"@rohankumar4179/engram-sdk\";
+
+const mind = engram({ agent: \"money-ops\" });
+const agent = mind.wrap(myAgent);
+await agent(tx);   // agent.lastReceipt → r_…",
+  },
+  {
+    icon: Plug,
+    title: "MCP",
+    text: "Give Claude Code, Cursor or Claude Desktop beliefs, blame, commit and verify as tools.",
+    code: "{ \"mcpServers\": { \"engram\": {
+  \"command\": \"npx\",
+  \"args\": [\"@rohankumar4179/engram\", \"mcp\"]
+} } }",
+  },
+];
+
+function Developers() {
+  const origin = typeof location === "undefined" ? "https://engram.app" : location.origin;
+  return (
+    <section id="developers" className="relative mx-auto max-w-7xl scroll-mt-16 px-6 py-32">
+      <SectionHead
+        eyebrow="For developers"
+        title={<><span className="text-headline">Bring your own agent.</span><br /><Em>Keep its memory honest.</Em></>}
+        text="The same engine as this app, as a CLI, a TypeScript SDK and an MCP server. Link any of them to your dashboard with your wallet."
+      />
+      <div className="mt-16 grid gap-5 lg:grid-cols-3">
+        {DEV_CARDS.map((c, i) => (
+          <BlurFade key={c.title} delay={0.08 * i} inView className="h-full">
+            <div className="card-black flex h-full flex-col p-6">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.02]"><c.icon className="size-[18px] text-[#cfc5ff]" /></span>
+                <h3 className="text-[19px] font-semibold tracking-[-0.02em]">{c.title}</h3>
+              </div>
+              <p className="mt-3 text-[14.5px] leading-[1.6] text-white/60">{c.text}</p>
+              <pre className="mt-5 flex-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-black/70 p-4 font-mono text-[12px] leading-relaxed text-white/80">{c.code}</pre>
+            </div>
+          </BlurFade>
+        ))}
+      </div>
+      <BlurFade delay={0.25} inView>
+        <div className="mt-6 flex flex-col items-start gap-4 rounded-2xl border border-[#67e8f9]/15 bg-[#67e8f9]/[0.04] p-6 sm:flex-row sm:items-center">
+          <Link2 className="size-5 shrink-0 text-[#67e8f9]" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-medium">Link a CLI or SDK agent to your dashboard</div>
+            <div className="mt-1 text-[13.5px] text-white/55">Approve with your Sui wallet. Every commit syncs; the server re-verifies signatures, Merkle roots and Sui anchors before showing it. Raw memories and keys never leave your machine.</div>
+          </div>
+          <code className="max-w-full overflow-x-auto rounded-lg bg-black/70 px-3 py-2 font-mono text-[12px] whitespace-nowrap text-white/85">npx @rohankumar4179/engram link --server {origin}</code>
+        </div>
+      </BlurFade>
+      <div className="mt-8 flex flex-wrap justify-center gap-3 text-[13px]">
+        <a href="https://www.npmjs.com/package/@rohankumar4179/engram" target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-white/70 transition hover:border-white/25 hover:text-white">CLI on npm ↗</a>
+        <a href="https://www.npmjs.com/package/@rohankumar4179/engram-sdk" target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-white/70 transition hover:border-white/25 hover:text-white">SDK on npm ↗</a>
+        <a href={GITHUB} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-white/70 transition hover:border-white/25 hover:text-white">Docs on GitHub ↗</a>
       </div>
     </section>
   );
