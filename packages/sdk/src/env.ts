@@ -1,6 +1,8 @@
 import { MoveAnchorer, WalrusBlobAnchorer, type Anchorer } from "./anchor.js";
-import { GeminiLLM, type LLM } from "./llm.js";
-import { WalrusMemoryRemote, type RemoteHit, type RemoteMemory } from "./remote.js";
+import { GeminiLLM, geminiEmbedder, type LLM } from "./llm.js";
+import { suiGrpc } from "./anchor.js";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { WalrusMemoryRemote, type ManualModeConfig, type RemoteHit, type RemoteMemory } from "./remote.js";
 import { TatumSui } from "./tatum.js";
 
 /**
@@ -10,6 +12,7 @@ import { TatumSui } from "./tatum.js";
  *   GEMINI_API_KEYS (comma-separated), GEMINI_MODEL     consolidation LLM
  *   ENGRAM_ANCHOR_PACKAGE + SUI_MNEMONIC                anchor commits with the engram_anchor Move module
  *   ENGRAM_ANCHOR_NETWORK                               mainnet (default, via Tatum) or testnet
+ *   SUI_MNEMONIC (account owner) + GEMINI_API_KEYS      Walrus Memory manual-mode fallback (MEMWAL_MANUAL=off disables)
  */
 export interface EnvServices {
   remote: RemoteMemory;
@@ -38,7 +41,7 @@ export function servicesFromEnv(env: Record<string, string | undefined> = proces
   return {
     remote: new LazyRemote(() => {
       if (!env.MEMWAL_KEY || !accountId) throw new Error("Walrus Memory is not configured: set MEMWAL_KEY and MEMWAL_ACCOUNT_ID in .env");
-      return new WalrusMemoryRemote({ key: env.MEMWAL_KEY, accountId, serverUrl: env.MEMWAL_SERVER_URL });
+      return new WalrusMemoryRemote({ key: env.MEMWAL_KEY, accountId, serverUrl: env.MEMWAL_SERVER_URL, manual: manualMode(env) });
     }),
     tatum,
     anchorer,
@@ -64,5 +67,24 @@ class LazyRemote implements RemoteMemory {
   }
   search(namespace: string, query: string, limit?: number): Promise<RemoteHit[]> {
     return this.get().search(namespace, query, limit);
+  }
+}
+
+/** Manual-mode settings for Walrus Memory, if the wallet and an embedder are available. */
+function manualMode(env: Record<string, string | undefined>): ManualModeConfig | undefined {
+  if (env.MEMWAL_MANUAL === "off") return undefined;
+  const keys = (env.GEMINI_API_KEYS ?? env.GEMINI_API_KEY ?? "").split(",").filter(Boolean);
+  if (!env.SUI_MNEMONIC || keys.length === 0) return undefined;
+  try {
+    const kp = Ed25519Keypair.deriveKeypair(env.SUI_MNEMONIC.trim());
+    return {
+      suiPrivateKey: kp.getSecretKey(),
+      embed: geminiEmbedder(keys),
+      suiClient: suiGrpc("mainnet"),
+      packageId: env.MEMWAL_PACKAGE_ID,
+      registryId: env.MEMWAL_REGISTRY_ID,
+    };
+  } catch {
+    return undefined;
   }
 }

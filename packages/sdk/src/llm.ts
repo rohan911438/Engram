@@ -168,3 +168,34 @@ export class ScriptedLLM implements LLM {
     return this.answers.shift() as T;
   }
 }
+
+/**
+ * Gemini embeddings (gemini-embedding-001) at 1536 dims, rotating keys on quota
+ * errors. Used for Walrus Memory manual mode.
+ */
+export function geminiEmbedder(apiKeys: string[], opts: { model?: string; dims?: number; fetch?: typeof fetch } = {}): (text: string) => Promise<number[]> {
+  const model = opts.model ?? "gemini-embedding-001";
+  const f = opts.fetch ?? fetch;
+  let next = 0;
+  return async (text: string) => {
+    let last = "";
+    for (let attempt = 0; attempt < apiKeys.length * 2; attempt++) {
+      const key = apiKeys[next % apiKeys.length]!;
+      const res = await f(`https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ content: { parts: [{ text }] }, outputDimensionality: opts.dims ?? 1536 }),
+      });
+      if (res.ok) {
+        const j = (await res.json()) as { embedding?: { values?: number[] } };
+        if (!j.embedding?.values?.length) throw new Error("Gemini embedding returned no values");
+        return j.embedding.values;
+      }
+      last = `HTTP ${res.status}`;
+      if (res.status !== 429 && res.status < 500) throw new Error(`Gemini embedding failed: ${last} ${(await res.text()).slice(0, 200)}`);
+      next++;
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
+    throw new Error(`Gemini embedding failed on every key: ${last}`);
+  };
+}
