@@ -6,6 +6,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Engram, FakeAnchorer, InMemoryRemote, ScriptedLLM } from "@rohankumar4179/engram-sdk";
 import { createApp } from "./app.js";
+import { LinkService } from "./links.js";
+import { exportAudit, readLink, startLink, syncLink, waitForLink } from "@rohankumar4179/engram-sdk";
 import { Tenant, Tenants, agentName } from "./tenants.js";
 
 let dir: string;
@@ -49,7 +51,7 @@ beforeAll(async () => {
   const ep = e.observe({ source: "user", data: "hi" });
   e.applyOp({ op: "create", key: "x", statement: "X.", confidence: 0.8, evidence: [ep.id], tags: ["x"], reason: "t" });
   await e.commit("demo");
-  const server = createApp({ tenants: new Tenants(join(dir, "data"), services), demo: new Tenant("demo", demoDir, services, true), staticDir: null, storageChain: chain, limits: { auth: { max: 40, windowMs: 60_000 } } });
+  const server = createApp({ tenants: new Tenants(join(dir, "data"), services), demo: new Tenant("demo", demoDir, services, true), staticDir: null, storageChain: chain, limits: { auth: { max: 40, windowMs: 60_000 } }, links: new LinkService(join(dir, "data"), services.anchorer) });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   stop = () => server.close();
@@ -162,6 +164,66 @@ describe("agents", () => {
     expect(ownRemote.items.length).toBeGreaterThan(before);
     // demo stays read-only
     expect((await call("/api/demo/storage")).status).toBe(403);
+  });
+
+  it("links a CLI/SDK agent to the wallet, verifies its syncs, shows it read-only", async () => {
+    const owner = new Ed25519Keypair();
+    const cookie = (await signIn(owner)).res.setCookie!.split(";")[0]!;
+    // a local agent somewhere else
+    const local = Engram.init("laptop-agent", { dir: join(dir, "laptop"), ...services });
+    const ep = local.observe({ source: "user", data: "rent 450" });
+    local.applyOp({ op: "create", key: "rent", statement: "Rent is 450.", confidence: 0.9, evidence: [ep.id], tags: ["rent"], reason: "t" });
+    await local.commit("first");
+    local.decide({ action: "no alert", input: 1, beliefs: ["b_rent"] });
+
+    const start = await startLink(local, base, "my laptop");
+    expect(start.url).toMatch(/\/link\?code=[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    expect((await call(`/api/link/poll?device=${start.device}`)).body.status).toBe("pending");
+    expect((await call(`/api/link/info?code=${start.code}`)).status).toBe(401); // must be signed in
+    expect((await call(`/api/link/info?code=${start.code}`, { cookie })).body).toMatchObject({ agent: "laptop-agent", label: "my laptop" });
+    expect((await call("/api/link/decide", { json: { code: start.code, approve: true }, cookie })).body.status).toBe("approved");
+    const link = await waitForLink(local, start, base, { intervalMs: 10 });
+    expect(link.wallet).toBe(owner.toSuiAddress());
+    expect(readLink(local)?.token).toBe(link.token);
+    expect((await call(`/api/link/poll?device=${start.device}`)).body.status).toBe("expired"); // token handed out once
+
+    const synced = await syncLink(local);
+    expect(synced).toMatchObject({ commits: 1, receipts: 1 });
+    const agents = (await call("/api/me/agents", { cookie })).body;
+    expect(agents.linked).toHaveLength(1);
+    expect(agents.linked[0]).toMatchObject({ agent: "laptop-agent", label: "my laptop", commits: 1, receipts: 1 });
+    const id = agents.linked[0].id;
+    expect((await call(`/api/linked/${id}/summary`, { cookie })).body.counts.commits).toBe(1);
+    const blame = (await call(`/api/linked/${id}/belief/b_rent`, { cookie })).body;
+    expect(blame.error ?? "").toBe("");
+    expect(blame.evidence[0].episode.summary).toMatch(/private/);
+    const v = (await call(`/api/linked/${id}/verify/HEAD`, { cookie })).body;
+    expect(v.ok).toBe(true);
+    expect(v.checks.find((c: { name: string }) => c.name === "walrus").skipped).toBe(true);
+
+    // another wallet can't see it
+    const other = (await signIn(new Ed25519Keypair())).res.setCookie!.split(";")[0]!;
+    expect((await call(`/api/linked/${id}/summary`, { cookie: other })).status).toBe(404);
+    // tampered bundle is refused
+    const post = (b: unknown, token = link.token) => fetch(`${base}/api/link/sync`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify(b) });
+    const bad = exportAudit(local);
+    bad.beliefs[0]!.statement = "Rent is 45.";
+    const r1 = await post(bad);
+    expect(r1.status).toBe(400);
+    expect((await r1.json()).error).toMatch(/failed verification/);
+    // a bundle from another agent key is refused
+    const imposter = Engram.init("laptop-agent", { dir: join(dir, "imposter"), ...services });
+    const r2 = await post(exportAudit(imposter));
+    expect((await r2.json()).error).toMatch(/different agent key/);
+    // history can't be rewritten: a bundle without the synced head is refused
+    const rewritten = exportAudit(local);
+    rewritten.commits = [];
+    rewritten.head = null;
+    expect((await (await post(rewritten)).json()).error).toMatch(/history rewrite/);
+    // unlink revokes the token
+    await call("/api/me/agents/unlink", { json: { id }, cookie });
+    expect((await post(exportAudit(local))).status).toBe(401);
+    expect((await call("/api/me/agents", { cookie })).body.linked).toHaveLength(0);
   });
 
   it("rate-limits sign-in attempts per client", async () => {

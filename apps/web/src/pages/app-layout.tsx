@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { Brain, Database, FileCheck2, GitBranch, LayoutDashboard, Lock, Sparkles } from "lucide-react";
+import { Link, NavLink, Outlet, useLocation, useParams } from "react-router";
+import { Brain, Database, FileCheck2, GitBranch, Laptop, LayoutDashboard, Lock, Sparkles } from "lucide-react";
+import { AgentSwitcher } from "@/components/engram/agent-switcher";
 import { BeliefSheet } from "@/components/engram/belief-sheet";
 import { Brand } from "@/components/engram/brand";
 import { AddressAvatar, WalletButton } from "@/components/engram/wallet-button";
@@ -27,16 +28,19 @@ const NAV = [
  * Shell for /app (your wallet's agent, or `engram ui` locally) and /demo
  * (the read-only demo agent). Sets where API calls go before children render.
  */
-export function AppLayout({ kind }: { kind: "app" | "demo" }) {
+export function AppLayout({ kind }: { kind: "app" | "demo" | "linked" }) {
   const { mode, address } = useSession();
   const [belief, setBelief] = useState<string | null>(null);
   const loc = useLocation();
-  const source: Source | null = kind === "demo" ? "demo" : mode === "local" ? "local" : mode === "hosted" ? "me" : null;
+  const { id } = useParams();
+  const source: Source | null =
+    kind === "demo" ? "demo" : kind === "linked" ? (mode === "hosted" ? `linked/${id}` : null) : mode === "local" ? "local" : mode === "hosted" ? "me" : null;
   // Set synchronously so child data hooks hit the right agent on first render.
   if (source) setSource(source);
   const ctx = useMemo<AppContext>(() => ({ source: source ?? "local", readOnly: source !== "me", openBelief: setBelief }), [source]);
-  const base = kind === "demo" ? "/demo" : "/app";
-  const needsSignIn = source === "me" && !address;
+  const base = kind === "demo" ? "/demo" : kind === "linked" ? `/app/linked/${id}` : "/app";
+  const linked = kind === "linked";
+  const needsSignIn = (source === "me" || linked) && !address;
 
   return (
     <div className="flex min-h-screen bg-black">
@@ -47,6 +51,8 @@ export function AppLayout({ kind }: { kind: "app" | "demo" }) {
             <div className="flex items-center gap-2 text-sm"><Sparkles className="size-4 text-[#a78bfa]" /> Demo agent <span className="ml-auto rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">read-only</span></div>
           ) : source === "local" ? (
             <div className="text-sm">Local repo <span className="block text-xs text-muted-foreground">served by <code className="font-mono">engram ui</code></span></div>
+          ) : linked ? (
+            <div className="flex items-center gap-2 text-sm"><Laptop className="size-4 text-[#67e8f9]" /> Linked agent <span className="ml-auto rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">CLI / SDK</span></div>
           ) : address ? (
             <div className="flex items-center gap-2.5">
               <AddressAvatar address={address} className="size-7" />
@@ -59,6 +65,7 @@ export function AppLayout({ kind }: { kind: "app" | "demo" }) {
             <div className="flex items-center gap-2 text-sm text-muted-foreground"><Lock className="size-4" /> Not signed in</div>
           )}
         </div>
+        {address && mode === "hosted" && kind !== "demo" && <AgentSwitcher />}
         <nav className="mt-6 space-y-0.5">
           {NAV.map((n) => (
             <NavLink
@@ -91,11 +98,11 @@ export function AppLayout({ kind }: { kind: "app" | "demo" }) {
           <nav className="hidden items-center gap-1 text-sm text-muted-foreground lg:flex">
             <Link to="/" className="hover:text-foreground">Home</Link>
             <span className="opacity-40">/</span>
-            <span className="text-foreground">{source === "demo" ? "Demo agent" : source === "local" ? "Local agent" : "Your agent"}</span>
+            <span className="text-foreground">{source === "demo" ? "Demo agent" : source === "local" ? "Local agent" : linked ? "Linked agent" : "Your agent"}</span>
             <span className="opacity-40">/</span>
-            <span className="capitalize">{loc.pathname.split("/")[2] || "overview"}</span>
+            <span className="capitalize">{loc.pathname.split("/")[linked ? 4 : 2] || "overview"}</span>
           </nav>
-          <WalletButton goToApp={kind !== "app"} />
+          <WalletButton goToApp={kind === "demo"} />
         </header>
         <div className="lg:hidden">
           <div className="flex gap-1 overflow-x-auto border-b border-white/[0.06] px-4 py-2">

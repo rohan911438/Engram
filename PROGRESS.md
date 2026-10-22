@@ -83,3 +83,10 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 - Tests: SDK 62 · CLI 10 · money-ops 6 · server 13.
 - **Published to npm:** `@rohankumar4179/engram-sdk@0.1.0` and `@rohankumar4179/engram@0.1.0` (CLI). Verified from a clean install: `npx @rohankumar4179/engram`, SDK `engram()` round trip.
 - Still open: paid `share` (Mainnet funds).
+
+## Day 2, night (22 Oct) — linking CLI/SDK agents to the web app
+- `engram link` / `mind.link()`: device-code flow — the owner approves in the browser with their Sui wallet; token bound to wallet + agent key.
+- Every `commit` auto-syncs the audit bundle; the server re-verifies it (signatures, roots, receipts, Sui anchors via `ForeignAnchorChecker`) and refuses other keys and history rewrites.
+- Web: `/link` approval page, "Your agents" switcher, read-only linked-agent views (Mind/History/Receipts/Verify) at `/app/linked/<id>`. Engram can open a repo read-only (no keys) from a bundle.
+- Live: linked the CLI test agent → 2 commits synced, 2 testnet anchors re-read by the server. Tests: SDK 62 · CLI 10 · money-ops 6 · server 14.
+- npm packages need a 0.2.0 release for `link`/`sync` (user runs publish with OTP).

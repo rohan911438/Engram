@@ -34,7 +34,7 @@ export class WalrusBlobAnchorer implements Anchorer {
   constructor(
     readonly tatum: TatumSui,
     private memwalAccountId: string,
-    private opts: { retries?: number; delayMs?: number } = {},
+    private opts: { retries?: number; delayMs?: number; /** Skip "owned by this Walrus Memory account" (for someone else's agent). */ anyOwner?: boolean } = {},
   ) {}
 
   async ownerAddress(): Promise<string> {
@@ -65,7 +65,7 @@ export class WalrusBlobAnchorer implements Anchorer {
     if (blobIdFromU256(fields.blob_id) !== blobId) return { ok: false, detail: "on-chain blob_id does not match the manifest blob" };
     if (fields.certified_epoch == null) return { ok: false, detail: "blob is registered but not certified" };
     const owner = (obj.owner as { AddressOwner?: string } | undefined)?.AddressOwner;
-    if (owner && owner !== (await this.ownerAddress())) return { ok: false, detail: `blob owned by ${owner}, not the Walrus Memory account owner` };
+    if (owner && !this.opts.anyOwner && owner !== (await this.ownerAddress())) return { ok: false, detail: `blob owned by ${owner}, not the Walrus Memory account owner` };
     const tx = await this.tatum.getTransaction(anchor.txDigest);
     if (!tx.checkpoint) return { ok: false, detail: `transaction ${anchor.txDigest} not found` };
     if (anchor.checkpoint && tx.checkpoint !== anchor.checkpoint) return { ok: false, detail: `checkpoint mismatch (${tx.checkpoint} vs ${anchor.checkpoint})` };
@@ -254,4 +254,28 @@ export async function checkMoveAnchor(source: TatumSui | AnchoredEventReader, an
   if (r.event.merkleRoot !== c.manifest.merkleRoot) return { ok: false, detail: "event merkle_root differs from this commit" };
   if (r.event.agentPubKey !== c.manifest.agentPubKey) return { ok: false, detail: "event names a different agent key" };
   return { ok: true, detail: `Anchored event: root ${c.manifest.merkleRoot.slice(0, 10)}… public in checkpoint ${r.checkpoint}${net}`, timestampMs: r.timestampMs };
+}
+
+/**
+ * Checks anchors of an agent that isn't ours (e.g. one linked to the web app):
+ * Move-event anchors on any network, and Walrus Blob anchors without the
+ * "owned by our Walrus Memory account" rule.
+ */
+export class ForeignAnchorChecker implements Anchorer {
+  private blob?: WalrusBlobAnchorer;
+  constructor(private tatum?: TatumSui) {
+    if (tatum) this.blob = new WalrusBlobAnchorer(tatum, "", { anyOwner: true });
+  }
+  async find(): Promise<Anchor | null> {
+    return null;
+  }
+  async check(anchor: Anchor, blobId: string, c: Commit): Promise<AnchorCheck> {
+    if (anchor.method === "move-event") {
+      const net = anchor.network ?? "mainnet";
+      if (net === "mainnet" && !this.tatum) return { ok: true, detail: "mainnet anchor not checked (no Tatum key)" };
+      return checkMoveAnchor(net === "mainnet" ? this.tatum! : new GrpcEventReader(net), anchor, c);
+    }
+    if (!this.blob) return { ok: true, detail: "Walrus Blob anchor not checked (no Tatum key)" };
+    return this.blob.check(anchor, blobId, c);
+  }
 }

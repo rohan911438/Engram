@@ -3,6 +3,9 @@ import { canonical, verifySignature } from "./crypto.js";
 import { beliefKey, type Engram } from "./engram.js";
 import { buildCommitTree, commitId, verifyBeliefProof, verifyManifestSignature } from "./proof.js";
 import type { Belief, Commit, Receipt } from "./types.js";
+import { join } from "node:path";
+import { rmSync } from "node:fs";
+import { LocalStore } from "./store.js";
 
 /**
  * A self-contained audit file: the agent's commit history, every belief
@@ -114,4 +117,27 @@ export async function verifyAudit(bundle: AuditBundle, opts: { anchorer?: Anchor
   }
 
   return { ok: checks.every((x) => x.ok), checks, summary: { commits: bundle.commits.length, receipts: bundle.receipts.length, anchored } };
+}
+
+/**
+ * Rebuilds a read-only repo from a (verified) audit bundle at `dir/.engram`,
+ * replacing whatever was there. Open it with `Engram.open({ dir, readOnly: true, … })`.
+ */
+export function importAudit(bundle: AuditBundle, dir: string): void {
+  const root = join(dir, ".engram");
+  rmSync(root, { recursive: true, force: true });
+  const store = new LocalStore(root);
+  const ns = (k: string) => `engram-${bundle.agent}-${k}`;
+  const first = bundle.commits.at(-1);
+  store.file("config.json").write({
+    v: 1,
+    agent: bundle.agent,
+    agentPubKey: bundle.agentPubKey,
+    createdAt: first?.manifest.ts ?? bundle.exportedAt,
+    namespaces: { episodes: ns("episodes"), beliefs: ns("beliefs"), commits: ns("commits"), receipts: ns("receipts") },
+  });
+  for (const c of bundle.commits) store.put("commits", c.id, c);
+  for (const b of bundle.beliefs) store.put("beliefs", beliefKey(b), b);
+  for (const r of bundle.receipts) store.put("receipts", r.id, r);
+  if (bundle.head) store.writeText("HEAD", bundle.head);
 }

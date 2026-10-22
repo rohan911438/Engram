@@ -40,6 +40,8 @@ export function clientIp(req: IncomingMessage, trustProxy: boolean): string {
 /** Which rate-limit bucket a request falls in. */
 export function bucketFor(method: string, path: string): string | null {
   if (path.startsWith("/api/auth/")) return method === "POST" ? "auth" : null;
+  if (path === "/api/link/start" || path === "/api/link/decide") return "auth";
+  if (path === "/api/link/sync") return "sync";
   if (method === "POST" && /^\/api\/me\/(run|sync|learn|commit)$/.test(path)) return "jobs";
   if (method === "POST" && path.startsWith("/api/me/")) return "writes";
   if (/\/verify\//.test(path)) return "verify";
@@ -51,6 +53,7 @@ export const DEFAULT_LIMITS = {
   jobs: { max: 12, windowMs: 60 * 60_000 },
   writes: { max: 60, windowMs: 60_000 },
   verify: { max: 30, windowMs: 60_000 },
+  sync: { max: 60, windowMs: 60 * 60_000 },
 };
 
 export type ServiceState = "ok" | "degraded" | "down" | "not configured";

@@ -11,6 +11,7 @@ const DashboardPage = lazy(() => import("@/pages/dashboard").then((m) => ({ defa
 const MemoryPage = lazy(() => import("@/pages/memory").then((m) => ({ default: m.MemoryPage })));
 const HistoryView = lazy(() => import("@/views/history").then((m) => ({ default: m.HistoryView })));
 const MindView = lazy(() => import("@/views/mind").then((m) => ({ default: m.MindView })));
+const LinkPage = lazy(() => import("@/pages/link").then((m) => ({ default: m.LinkPage })));
 const ReceiptsView = lazy(() => import("@/views/receipts").then((m) => ({ default: m.ReceiptsView })));
 
 const Loading = () => <div className="h-64 animate-pulse rounded-3xl bg-white/[0.03]" />;
@@ -47,6 +48,8 @@ export default function App() {
     <TooltipProvider>
       <Routes>
         <Route path="/" element={<Suspense fallback={<div className="min-h-svh bg-black" />}><HomePage /></Suspense>} />
+        <Route path="/link" element={<Suspense fallback={<div className="min-h-svh bg-black" />}><LinkPage /></Suspense>} />
+        <Route path="/app/linked/:id" element={<AppLayout kind="linked" />}>{agentRoutes()}</Route>
         <Route path="/app" element={<AppLayout kind="app" />}>{agentRoutes()}</Route>
         <Route path="/demo" element={<AppLayout kind="demo" />}>{agentRoutes()}</Route>
         <Route path="*" element={<Navigate to="/" replace />} />

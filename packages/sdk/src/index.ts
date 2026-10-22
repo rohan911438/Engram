@@ -14,4 +14,5 @@ export { servicesFromEnv, type EnvServices } from "./env.js";
 export { inspectApi, episodeView, type InspectHandler } from "./inspect.js";
 export * from "./memwal-account.js";
 export { engram, Mind, type EngramConfig, type WrapOptions, type WrappedAgent } from "./mind.js";
-export { exportAudit, verifyAudit, type AuditBundle, type AuditReport, type AuditCheck } from "./audit.js";
+export { exportAudit, verifyAudit, importAudit, type AuditBundle, type AuditReport, type AuditCheck } from "./audit.js";
+export { DEFAULT_SERVER, readLink, removeLink, startLink, syncLink, waitForLink, type LinkInfo, type LinkStart, type SyncResult } from "./link.js";

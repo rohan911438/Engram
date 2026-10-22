@@ -6,6 +6,8 @@ import { WalletAuth } from "./auth.js";
 import type { Tenant, Tenants } from "./tenants.js";
 import { DEFAULT_LIMITS, RateLimiter, bucketFor, clientIp, probeHealth, type Health } from "./guard.js";
 import { lastLlmError } from "./tenants.js";
+import { LinkService } from "./links.js";
+import { ForeignAnchorChecker } from "@rohankumar4179/engram-sdk";
 import { mainnetStorageChain, storageStatus, storageTx, useOwnStorage, type StorageChain } from "./storage.js";
 
 const TYPES: Record<string, string> = {
@@ -35,6 +37,11 @@ export interface AppOptions {
   limits?: ConstructorParameters<typeof RateLimiter>[0];
   /** Trust X-Forwarded-For (set when running behind a proxy such as Railway). */
   trustProxy?: boolean;
+  /** Links CLI/SDK agents to wallets (default: under data/ via `linkDir`). */
+  links?: LinkService;
+  linkDir?: string;
+  /** Public URL of this app, for link pages (default: from the request). */
+  publicUrl?: string;
   /** For GET /api/health. */
   walrusUrl?: string;
   llmConfigured?: boolean;
@@ -59,11 +66,25 @@ export interface AppOptions {
  *   POST /api/me/storage/tx {step}      unsigned tx for the wallet (create-account | authorize-key)
  *   POST /api/me/storage/execute {bytes, signature}
  *   POST /api/me/storage/use {mode}     "own" (after setup) or "hosted"
+ *   POST /api/link/start {agent, agentPubKey, label}   CLI/SDK asks to link → { code, device, url }
+ *   GET  /api/link/poll?device=…        → { status, token? } (token handed out once)
+ *   GET  /api/link/info?code=…          (signed in) what's asking to link
+ *   POST /api/link/decide {code, approve}
+ *   POST /api/link/sync  (Bearer token) audit bundle → verified → stored
+ *   GET  /api/me/agents                 hosted agent + linked agents
+ *   POST /api/me/agents/unlink {id}
+ *   GET  /api/linked/<id>/<view>        read-only views of a linked agent
  */
 export function createApp(o: AppOptions) {
   const auth = o.auth ?? new WalletAuth();
   const chain = o.storageChain ?? mainnetStorageChain();
   const limiter = new RateLimiter(o.limits ?? DEFAULT_LIMITS);
+  const links = o.links ?? new LinkService(o.linkDir ?? "data", new ForeignAnchorChecker(o.tatum));
+  const baseUrl = (req: IncomingMessage) => {
+    if (o.publicUrl) return o.publicUrl;
+    const proto = o.trustProxy ? String(req.headers["x-forwarded-proto"] ?? "http").split(",")[0] : o.secureCookies ? "https" : "http";
+    return `${proto}://${req.headers.host ?? "localhost"}`;
+  };
   let health: { at: number; value: Promise<Health> } | null = null;
 
   return createServer(async (req, res) => {
@@ -91,6 +112,47 @@ export function createApp(o: AppOptions) {
       if (path === "/api/mode") return send(res, 200, { mode: "hosted", demo: !!o.demo });
       if (path === "/api/stats") return send(res, 200, await stats(o));
       if (path === "/api/auth/me") return send(res, 200, { address: auth.session(token) });
+
+      // ---- linking CLI / SDK agents to this wallet ----
+      if (path.startsWith("/api/link/")) {
+        const action = path.slice("/api/link/".length);
+        if (req.method === "POST" && action === "start") return send(res, 200, links.start(await body(req), baseUrl(req)));
+        if (action === "poll") return send(res, 200, links.poll(url.searchParams.get("device") ?? ""));
+        if (req.method === "POST" && action === "sync") {
+          const rec = links.authenticate(req.headers.authorization);
+          const r = await links.sync(rec, await body(req, 20_000_000));
+          return send(res, 200, { ...r, url: `${baseUrl(req)}/app/linked/${r.agentId}` });
+        }
+        const wallet = auth.session(token);
+        if (!wallet) return send(res, 401, { error: "connect and sign in with your wallet first" });
+        if (action === "info") return send(res, 200, links.info(url.searchParams.get("code") ?? ""));
+        if (req.method === "POST" && action === "decide") {
+          const b = await body<{ code?: string; approve?: boolean }>(req);
+          return send(res, 200, links.decide(String(b.code ?? ""), wallet, b.approve !== false));
+        }
+        return send(res, 404, { error: "unknown link endpoint" });
+      }
+      if (path === "/api/me/agents" || path === "/api/me/agents/unlink") {
+        const wallet = auth.session(token);
+        if (!wallet) return send(res, 401, { error: "connect and sign in with your wallet first" });
+        if (req.method === "POST") {
+          const b = await body<{ id?: string }>(req);
+          return send(res, 200, { removed: links.unlink(wallet, String(b.id ?? "")) });
+        }
+        const hosted = o.tenants.forWallet(wallet).engram;
+        return send(res, 200, { hosted: { agent: hosted.agent, head: hosted.head(), commits: hosted.head() ? hosted.log().length : 0, beliefs: hosted.beliefs().length }, linked: links.list(wallet) });
+      }
+      const lm = /^\/api\/linked\/([0-9a-f]{16})\/([^/]+)(?:\/(.*))?$/.exec(path);
+      if (lm) {
+        const wallet = auth.session(token);
+        if (!wallet) return send(res, 401, { error: "connect and sign in with your wallet first" });
+        const [, id, view, rest = ""] = lm;
+        if (req.method !== "GET") return send(res, 403, { error: "linked agents are read-only here — change them from the CLI or SDK" });
+        if (view === "whoami") return send(res, 200, { address: wallet, agent: links.engram(wallet, id!).agent, readOnly: true });
+        const handler = inspectApi(links.engram(wallet, id!))[view ?? ""];
+        if (!handler) return send(res, 404, { error: "unknown endpoint" });
+        return send(res, 200, await handler(url.searchParams, rest));
+      }
 
       if (req.method === "POST" && path === "/api/auth/challenge") {
         const { address } = await body<{ address?: string }>(req);
@@ -163,7 +225,8 @@ export function createApp(o: AppOptions) {
       if (!handler) return send(res, 404, { error: "unknown endpoint" });
       return send(res, 200, await handler(url.searchParams, rest));
     } catch (err) {
-      send(res, 400, { error: (err as Error).message });
+      const status = (err as { status?: number }).status;
+      send(res, status && status >= 400 && status < 600 ? status : 400, { error: (err as Error).message });
     }
   });
 }
@@ -197,11 +260,11 @@ function cookie(req: IncomingMessage, name: string): string | undefined {
   return m?.[1];
 }
 
-async function body<T>(req: IncomingMessage): Promise<T> {
+async function body<T>(req: IncomingMessage, max = 20_000): Promise<T> {
   let raw = "";
   for await (const chunk of req) {
     raw += chunk;
-    if (raw.length > 20_000) throw new Error("request too large");
+    if (raw.length > max) throw new Error("request too large");
   }
   if (!raw) return {} as T;
   try {

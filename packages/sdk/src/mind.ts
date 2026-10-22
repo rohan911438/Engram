@@ -6,6 +6,7 @@ import { servicesFromEnv } from "./env.js";
 import { GeminiLLM, type LLM } from "./llm.js";
 import { InMemoryRemote, WalrusMemoryRemote, type RemoteMemory } from "./remote.js";
 import { TatumSui } from "./tatum.js";
+import { DEFAULT_SERVER, readLink, removeLink, startLink, syncLink, waitForLink, type LinkInfo, type LinkStart, type SyncResult } from "./link.js";
 import type { Belief, Commit, Episode, Receipt } from "./types.js";
 
 /**
@@ -93,9 +94,49 @@ export class Mind {
     return this.core.sleep({ llm: this.llmInstance, context: opts.context ?? this.context, batchSize: opts.batchSize });
   }
 
-  /** Signs and stores a snapshot of the current beliefs, anchored on Sui. */
-  commit(message: string): Promise<Commit> {
-    return this.core.commit(message);
+  /**
+   * Signs and stores a snapshot of the current beliefs, anchored on Sui. If the
+   * agent is linked to a dashboard, the new history is synced too (a failed
+   * sync never fails the commit; see `lastSyncError`).
+   */
+  async commit(message: string): Promise<Commit> {
+    const c = await this.core.commit(message);
+    if (readLink(this.core)) {
+      try {
+        await this.sync();
+        this.lastSyncError = null;
+      } catch (err) {
+        this.lastSyncError = (err as Error).message;
+      }
+    }
+    return c;
+  }
+
+  /** Why the last automatic sync after commit failed, if it did. */
+  lastSyncError: string | null = null;
+
+  /**
+   * Links this agent to an Engram web app account (a Sui wallet). `onCode`
+   * gets the code and URL to show the owner; resolves once they approve.
+   */
+  async link(opts: { server?: string; label?: string; onCode: (start: LinkStart) => void }): Promise<LinkInfo> {
+    const server = opts.server ?? DEFAULT_SERVER;
+    const start = await startLink(this.core, server, opts.label);
+    opts.onCode(start);
+    return waitForLink(this.core, start, server);
+  }
+
+  /** Uploads the audit bundle to the linked dashboard (verified there before it's shown). */
+  sync(): Promise<SyncResult> {
+    return syncLink(this.core);
+  }
+
+  get linked(): LinkInfo | null {
+    return readLink(this.core);
+  }
+
+  unlink(): boolean {
+    return removeLink(this.core);
   }
 
   /**

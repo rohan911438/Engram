@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { Command } from "commander";
 import { config as loadEnv } from "dotenv";
 import pc from "picocolors";
-import { Engram, NothingToCommitError, beliefKey, exportAudit, servicesFromEnv, verifyAudit, type AuditBundle, type Belief, type EpisodeSource, type VerifyReport } from "@rohankumar4179/engram-sdk";
+import { DEFAULT_SERVER, Engram, NothingToCommitError, beliefKey, exportAudit, readLink, removeLink, servicesFromEnv, startLink, syncLink, verifyAudit, waitForLink, type AuditBundle, type Belief, type EpisodeSource, type VerifyReport } from "@rohankumar4179/engram-sdk";
 
 const program = new Command();
 program
@@ -67,6 +67,18 @@ function run<A extends unknown[]>(fn: (...args: A) => unknown | Promise<unknown>
       process.exitCode = 1;
     }
   };
+}
+
+/** After a commit: if this agent is linked to a dashboard, sync it (never fails the commit). */
+async function autoSync(e: Engram) {
+  const link = readLink(e);
+  if (!link) return;
+  try {
+    const r = await syncLink(e, link);
+    ok(`synced to your dashboard (${r.commits} commits verified) ${pc.cyan(r.url)}`);
+  } catch (err) {
+    console.log(pc.yellow(`! dashboard sync failed: ${(err as Error).message} — run \`engram sync\` to retry`));
+  }
 }
 
 // ---- commands --------------------------------------------------------------
@@ -166,6 +178,7 @@ program
       ok(`manifest on Walrus  blob ${c.manifestBlobId}`);
       if (c.anchor) ok(`anchored on Sui (tx ${c.anchor.txDigest.slice(0, 10)}…, checkpoint ${Number(c.anchor.checkpoint).toLocaleString("en-US")})`);
       else console.log(pc.yellow("! anchor not found yet — run `engram anchor` in a minute"));
+      await autoSync(e);
     } catch (err) {
       if (err instanceof NothingToCommitError) return info(err.message);
       throw err;
@@ -375,6 +388,45 @@ program
     const tail = `${r.summary.commits} commits, ${r.summary.receipts} receipts${anchorer ? `, ${r.summary.anchored} anchors re-read on Sui` : ""}`;
     console.log(r.ok ? `\n${pc.green(pc.bold("VALID"))}${pc.dim(` — ${tail}`)}` : `\n${pc.red(pc.bold("INVALID"))}`);
     if (!r.ok) process.exitCode = 1;
+  }));
+
+program
+  .command("link")
+  .description("link this agent to your Engram dashboard (sign in with your Sui wallet in the browser)")
+  .option("-s, --server <url>", "Engram web app", DEFAULT_SERVER)
+  .option("-l, --label <name>", "how it's shown on the dashboard (default: agent name)")
+  .action(run(async (o: { server: string; label?: string }) => {
+    const e = open();
+    const existing = readLink(e);
+    if (existing) info(`already linked to ${existing.wallet} on ${existing.server} — linking again replaces it`);
+    const start = await startLink(e, o.server, o.label);
+    console.log(`\n  Open ${pc.cyan(pc.bold(start.url))}`);
+    console.log(`  and approve code ${pc.bold(start.code)} with your Sui wallet.\n`);
+    info("waiting for approval (the code expires in 10 minutes)…");
+    const link = await waitForLink(e, start, o.server);
+    ok(`linked to wallet ${pc.bold(`${link.wallet.slice(0, 10)}…${link.wallet.slice(-4)}`)}`);
+    if (e.head()) {
+      const r = await syncLink(e, link);
+      ok(`synced ${r.commits} commits and ${r.receipts} receipts — verified by the server`);
+      console.log(`  ${pc.cyan(r.url)}`);
+    } else info("commit something and it will appear on your dashboard");
+    info("from now on every `engram commit` syncs automatically. Raw episodes and keys never leave this machine.");
+  }));
+
+program
+  .command("sync")
+  .description("upload this agent's verified history (commits, beliefs, receipts) to your linked dashboard")
+  .action(run(async () => {
+    const r = await syncLink(open());
+    ok(`synced ${r.commits} commits, ${r.receipts} receipts (${r.anchored} Sui anchors re-checked by the server)`);
+    console.log(`  ${pc.cyan(r.url)}`);
+  }));
+
+program
+  .command("unlink")
+  .description("forget the dashboard link on this machine (remove the agent from the dashboard in the web app)")
+  .action(run(() => {
+    ok(removeLink(open()) ? "unlinked on this machine" : "this agent wasn't linked");
   }));
 
 program

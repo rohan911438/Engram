@@ -110,6 +110,23 @@ mind.forget("ep_…");                               // provable forgetting
 await mind.verify(agent.lastReceipt!.id);          // signature → proofs → Walrus → Sui
 ```
 
+### Link a CLI / SDK agent to the web app
+
+```bash
+$ engram link --server https://<your-engram-app>
+  Open https://<your-engram-app>/link?code=K7QF-29XM
+  and approve code K7QF-29XM with your Sui wallet.
+✔ linked to wallet 0xfe2cfd89…7b46
+✔ synced 2 commits and 0 receipts — verified by the server
+```
+
+From then on every `engram commit` (or `mind.commit()` in the SDK, after `mind.link({...})`) syncs
+automatically, and the agent shows up under **Your agents** when you sign in with that wallet.
+Only the audit bundle is uploaded — commits, beliefs and signed receipts, never raw episodes or keys —
+and the server **re-verifies every sync** (signatures, Merkle roots, Sui anchors) before showing it.
+A link token only accepts bundles signed by that agent's key, and history can only grow.
+`engram sync` re-uploads; `engram unlink` forgets the link locally (remove it from the dashboard too).
+
 ### MCP (Claude Code, Cursor, Claude Desktop)
 
 ```json
@@ -135,6 +152,7 @@ Tools: `engram_status`, `engram_remember`, `engram_beliefs` (by topic or at a pa
 | `engram forget <episode>` | Destroys the episode's key, retracts what depended on it, tombstones the next commit |
 | `engram ui` | The inspector — belief graph with time slider, history, receipts, live verification |
 | `engram export --audit` · `engram audit <file>` | Audit bundle (commits, beliefs, receipts — no raw episodes) that anyone can verify without the repo, incl. Sui anchors |
+| `engram link` · `sync` · `unlink` | Link the agent to your web dashboard with your Sui wallet; commits sync automatically and are verified by the server |
 | `engram mcp` | MCP server: the commands above as tools for Claude Code, Cursor, Claude Desktop |
 
 ## How it works

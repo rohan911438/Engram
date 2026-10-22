@@ -106,6 +106,11 @@ export interface OpenOptions {
   remote: RemoteMemory;
   /** Finds the on-chain anchor for commits. Without one, commits are signed but unanchored. */
   anchorer?: Anchorer;
+  /**
+   * Open without the agent's keys (e.g. a repo rebuilt from an audit bundle):
+   * history, beliefs, receipts and verification work; signing and decrypting don't.
+   */
+  readOnly?: boolean;
 }
 
 export interface ObserveInput {
@@ -129,8 +134,10 @@ export class Engram {
   readonly remote: RemoteMemory;
   readonly anchorer?: Anchorer;
   private secretKey: string;
+  /** True when opened without keys — nothing can be signed or decrypted. */
+  readonly readOnly: boolean;
 
-  private constructor(store: LocalStore, remote: RemoteMemory, anchorer?: Anchorer) {
+  private constructor(store: LocalStore, remote: RemoteMemory, anchorer?: Anchorer, readOnly = false) {
     this.store = store;
     this.remote = remote;
     this.anchorer = anchorer;
@@ -139,6 +146,13 @@ export class Engram {
     this.config = config;
     const sk = store.readText("agent.key");
     const mk = store.readText("master.key");
+    this.readOnly = readOnly;
+    if (readOnly) {
+      this.secretKey = "";
+      // A vault with a throwaway master key and no entries: every read() returns null.
+      this.vault = new KeyVault(store.file("vault.json"), newDataKey());
+      return;
+    }
     if (!sk || !mk) throw new Error("Missing agent.key or master.key in .engram/");
     if (publicKeyOf(sk) !== config.agentPubKey) throw new Error("agent.key does not match config.json");
     this.secretKey = sk;
@@ -167,7 +181,7 @@ export class Engram {
   }
 
   static open(opts: OpenOptions): Engram {
-    return new Engram(new LocalStore(join(resolve(opts.dir ?? "."), ".engram")), opts.remote, opts.anchorer);
+    return new Engram(new LocalStore(join(resolve(opts.dir ?? "."), ".engram")), opts.remote, opts.anchorer, opts.readOnly);
   }
 
   get agent(): string {
@@ -180,6 +194,7 @@ export class Engram {
 
   /** Signs with the agent key (commits and receipts). */
   protected signRaw(message: string): string {
+    if (this.readOnly) throw new Error("this repo is read-only (opened without the agent's key)");
     return sign(message, this.secretKey);
   }
 
@@ -516,11 +531,22 @@ export class Engram {
     const belief = this.belief(ref);
     if (!belief) throw new Error(`unknown belief ${ref}`);
     const evidence = belief.evidence.map((id) => {
-      const episode = this.episode(id);
+      const stored = this.episode(id);
+      const episode = stored ?? (this.readOnly ? this.sharedEpisodeStub(id, belief.createdAt) : null);
       if (!episode) throw new Error(`belief ${ref} cites missing episode ${id}`);
-      return { episode, content: episode.forgottenAt ? null : this.read(id) };
+      return { episode, content: !stored || episode.forgottenAt ? null : this.read(id) };
     }).sort((a, b) => a.episode.ts - b.episode.ts);
     return { belief, history: this.history(belief.id).filter((b) => b.version <= belief.version), evidence };
+  }
+
+  /**
+   * In a read-only repo rebuilt from an audit bundle the raw episodes aren't
+   * present (they stay with the agent). Commits still record each evidence
+   * episode's Walrus blob ID, so blame can point at it.
+   */
+  private sharedEpisodeStub(id: string, ts: number): Episode {
+    const blobId = this.head() ? this.log().map((c) => c.manifest.episodes[id]).find(Boolean) : undefined;
+    return { id, ts, source: "agent", summary: "kept private by the agent", blobId, keyId: "", contentHash: "", envelope: { iv: "", ct: "", tag: "" } } as unknown as Episode;
   }
 
   // ---- Receipts --------------------------------------------------------------

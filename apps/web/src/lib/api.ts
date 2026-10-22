@@ -66,8 +66,9 @@ export interface Stats {
  *   local: `engram ui` serving one repo at /api
  *   me:    the signed-in wallet's agent on the Engram server
  *   demo:  the read-only demo agent on the Engram server
+ *   linked/<id>: a CLI/SDK agent linked to the signed-in wallet (read-only)
  */
-export type Source = "local" | "me" | "demo";
+export type Source = "local" | "me" | "demo" | `linked/${string}`;
 let base = "/api";
 let source: Source = "local";
 export function setSource(s: Source) {
@@ -134,6 +135,10 @@ export const server = {
   mode: () => request<{ mode: "local" | "hosted"; demo?: boolean }>("/api/mode").catch(() => ({ mode: "local" as const, demo: false })),
   stats: () => request<Stats>("/api/stats"),
   health: () => request<Health>("/api/health"),
+  agents: () => request<{ hosted: { agent: string; head: string | null; commits: number; beliefs: number }; linked: LinkedAgent[] }>("/api/me/agents"),
+  unlinkAgent: (id: string) => request<{ removed: boolean }>("/api/me/agents/unlink", { method: "POST", body: JSON.stringify({ id }) }),
+  linkInfo: (code: string) => request<{ agent: string; label: string; agentPubKey: string; expiresAt: number; status: string }>(`/api/link/info?code=${encodeURIComponent(code)}`),
+  linkDecide: (code: string, approve: boolean) => request<{ status: string }>("/api/link/decide", { method: "POST", body: JSON.stringify({ code, approve }) }),
   me: () => request<{ address: string | null }>("/api/auth/me"),
   challenge: (address: string) => request<{ nonce: string; message: string }>("/api/auth/challenge", { method: "POST", body: JSON.stringify({ address }) }),
   verify: (nonce: string, signature: string) => request<{ address: string }>("/api/auth/verify", { method: "POST", body: JSON.stringify({ nonce, signature }) }),
@@ -182,4 +187,19 @@ export interface Health {
   walrus: { state: ServiceState; detail: string };
   sui: { state: ServiceState; detail: string };
   llm: { state: ServiceState; detail: string };
+}
+
+export interface LinkedAgent {
+  id: string;
+  agent: string;
+  label: string;
+  agentPubKey: string;
+  head: string | null;
+  headMessage: string | null;
+  commits: number;
+  beliefs: number;
+  receipts: number;
+  linkedAt: number;
+  syncedAt: number | null;
+  anchored: number;
 }
