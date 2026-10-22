@@ -61,3 +61,15 @@ Each milestone: build → validate (tests + real run) → fix → commit & push.
 2. Mainnet: fresh wallet (phrase never in chat) with ~$5 SUI → `publish-anchor.ts mainnet` → `ENGRAM_ANCHOR_NETWORK=mainnet`.
 3. Re-run the money-ops replay on Mainnet for the final demo data (10+ real memories).
 4. Stretch: paid `share` via MPP.
+
+## Day 2, later (22 Oct) — "make it all real"
+- **Per-user storage:** each wallet's agent can move to the owner's own Walrus Memory account (server builds `create_account` / `add_delegate_key`, wallet signs, server submits; switch only after the chain confirms). Old memories stay readable via `CombinedRemote`.
+- **Real demo story:** `money-ops live` sends real SUI between five generated wallets; the agent reads the owner's wallet from chain. Testnet run: Month 1 alerted 3/3 → learned 3 beliefs; Months 2–3 quiet 6/6 with receipts; Month 4 learned rent rise + scam address. **Paused at the Month 4 commit: Walrus Memory relayer is fully failing (MemWal#1285)** — a background watcher resumes it when recall works again.
+- **Hardening:** per-client rate limits, `/api/health` + in-app status banner, relayer 429/5xx retries, manual-mode recall only as fallback/verify.
+- **Faster + mobile:** route code-splitting (1.32 MB → 680 kB initial JS); dashboard fits at 390 px.
+- Tests: SDK 56 · CLI 4 · money-ops 6 · server 13.
+
+## Needs the user
+1. ~1.5 SUI on **Mainnet** (wallet you control, phrase never in chat): Mainnet anchor publish, Mainnet live story (~0.75 SUI), storage-setup test (~0.02 SUI).
+2. Gemini keys from **different Google Cloud projects** (or billing) — free tier is ~20 requests/day/model.
+3. Hosting: `railway login` (or another Docker host).
