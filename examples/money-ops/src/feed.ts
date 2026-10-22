@@ -21,7 +21,7 @@ interface RawTx {
 }
 
 /**
- * Reads a Sui wallet's history through Tatum's Sui RPC and turns each
+ * Reads a Sui wallet's history through Tatum's Sui gRPC gateway and turns each
  * transaction into WalletEvents. Coin decimals come from on-chain metadata.
  */
 export class WalletFeed {
@@ -34,12 +34,10 @@ export class WalletFeed {
 
   /** Newest transactions (sent and received), oldest first, skipping digests already seen. */
   async fetch(seen: Set<string>, limit = 20): Promise<WalletEvent[]> {
-    const [sent, received] = await Promise.all([
-      this.tatum.transactionsOf(this.address, "from", limit) as Promise<RawTx[]>,
-      this.tatum.transactionsOf(this.address, "to", limit) as Promise<RawTx[]>,
-    ]);
+    // One query covers both directions: every transaction that moved this address's state.
+    const txs = (await this.tatum.transactionsOf(this.address, limit)) as RawTx[];
     const byDigest = new Map<string, RawTx>();
-    for (const t of [...sent, ...received]) if (!seen.has(t.digest)) byDigest.set(t.digest, t);
+    for (const t of txs) if (!seen.has(t.digest)) byDigest.set(t.digest, t);
     const events: WalletEvent[] = [];
     for (const t of byDigest.values()) events.push(...(await this.toEvents(t)));
     return events.sort((a, b) => a.ts - b.ts);
@@ -77,7 +75,7 @@ export class WalletFeed {
   private async meta(coinType: string): Promise<{ decimals: number; symbol: string }> {
     let m = this.decimals.get(coinType);
     if (!m) {
-      const r = await this.tatum.rpc<{ decimals: number; symbol: string } | null>("suix_getCoinMetadata", [coinType]).catch(() => null);
+      const r = await this.tatum.coinMetadata(coinType).catch(() => null);
       m = { decimals: r?.decimals ?? 9, symbol: r?.symbol ?? coinType.split("::").pop() ?? "?" };
       this.decimals.set(coinType, m);
     }

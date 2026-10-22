@@ -1,6 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { SuiJsonRpcClient, JsonRpcHTTPTransport } from "@mysten/sui/jsonRpc";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { bcs } from "@mysten/sui/bcs";
 import { hexToBytes } from "./crypto.js";
@@ -105,7 +104,7 @@ export interface MoveAnchorerOptions {
   packageId: string;
   /** Wallet that pays gas (BIP-39 phrase). */
   mnemonic: string;
-  /** Default mainnet. Mainnet sends and re-reads through Tatum; testnet uses the public Sui gRPC node. */
+  /** Default mainnet. Mainnet sends and re-reads through Tatum (gRPC); testnet uses the public Sui gRPC node. */
   network?: SuiNetwork;
   /** Required on mainnet. */
   tatum?: TatumSui;
@@ -144,11 +143,14 @@ export function suiGrpc(network: SuiNetwork): SuiGrpcClient {
   return c;
 }
 
-/** Reads anchors from a public Sui full node over gRPC (used for testnet). */
+/** Reads anchors over gRPC: a public Sui full node by network name, or any client (e.g. Tatum's). */
 export class GrpcEventReader implements AnchoredEventReader {
-  constructor(readonly network: SuiNetwork) {}
+  private client: SuiGrpcClient;
+  constructor(source: SuiNetwork | SuiGrpcClient) {
+    this.client = typeof source === "string" ? suiGrpc(source) : source;
+  }
   async readAnchored(digest: string, eventType: string): Promise<AnchoredRead> {
-    const res = await suiGrpc(this.network).getTransaction({ digest, include: { events: true } });
+    const res = await this.client.getTransaction({ digest, include: { events: true } });
     const t = res.Transaction ?? res.FailedTransaction;
     const ev = t?.events?.find((e) => e.eventType === eventType);
     const out: AnchoredRead = { checkpoint: t?.checkpoint ?? undefined, timestampMs: t?.timestampMs ?? undefined };
@@ -160,26 +162,15 @@ export class GrpcEventReader implements AnchoredEventReader {
   }
 }
 
-/** Reads anchors through Tatum's Sui (mainnet) JSON-RPC. */
+/** Reads anchors through Tatum's Sui Mainnet gRPC gateway. */
 export function tatumEventReader(tatum: TatumSui): AnchoredEventReader {
-  return {
-    async readAnchored(digest, eventType) {
-      const tx = await tatum.rpc<{ checkpoint?: string; timestampMs?: string; events?: { type: string; parsedJson?: Record<string, unknown> }[] }>("sui_getTransactionBlock", [digest, { showEvents: true }]);
-      const ev = tx.events?.find((e) => e.type === eventType)?.parsedJson;
-      const hex = (v: unknown) => (Array.isArray(v) ? toHex(v as number[]) : typeof v === "string" ? Buffer.from(v, "base64").toString("hex") : "");
-      return {
-        checkpoint: tx.checkpoint,
-        timestampMs: tx.timestampMs ? Number(tx.timestampMs) : undefined,
-        event: ev ? { commitId: hex(ev.commit_id), merkleRoot: hex(ev.merkle_root), agentPubKey: hex(ev.agent_pubkey) } : undefined,
-      };
-    },
-  };
+  return new GrpcEventReader(tatum.client);
 }
 
 /**
  * Option B anchoring: each commit calls `engram_anchor::anchor::anchor`, which
  * emits an `Anchored` event with the commit ID and Merkle root in the clear.
- * Mainnet transactions are sent and re-read through Tatum's Sui RPC.
+ * Mainnet transactions are sent and re-read through Tatum's Sui gRPC gateway.
  */
 export class MoveAnchorer implements Anchorer {
   private keypair: Ed25519Keypair;
@@ -189,7 +180,7 @@ export class MoveAnchorer implements Anchorer {
   constructor(private opts: MoveAnchorerOptions) {
     this.keypair = Ed25519Keypair.deriveKeypair(opts.mnemonic.trim());
     this.network = opts.network ?? "mainnet";
-    if (this.network === "mainnet" && (!opts.tatum || !opts.tatumApiKey)) throw new Error("mainnet anchoring needs a Tatum API key");
+    if (this.network === "mainnet" && !opts.tatum) throw new Error("mainnet anchoring needs a Tatum API key");
     this.reader = this.network === "mainnet" ? tatumEventReader(opts.tatum!) : new GrpcEventReader(this.network);
   }
 
@@ -218,17 +209,7 @@ export class MoveAnchorer implements Anchorer {
   }
 
   private async send(c: Commit): Promise<string> {
-    if (this.network === "mainnet") {
-      const client = new SuiJsonRpcClient({
-        network: "mainnet",
-        transport: new JsonRpcHTTPTransport({ url: this.opts.tatum!.url, rpc: { headers: { "x-api-key": this.opts.tatumApiKey! } } }),
-      });
-      const res = await client.signAndExecuteTransaction({ transaction: this.buildTx(c), signer: this.keypair, options: { showEffects: true } });
-      if (res.effects?.status.status !== "success") throw new Error(`anchor transaction failed: ${res.effects?.status.error ?? "unknown"}`);
-      await client.waitForTransaction({ digest: res.digest });
-      return res.digest;
-    }
-    const client = suiGrpc(this.network);
+    const client = this.network === "mainnet" ? this.opts.tatum!.client : suiGrpc(this.network);
     const res = await client.signAndExecuteTransaction({ transaction: this.buildTx(c), signer: this.keypair });
     if (res.$kind !== "Transaction") throw new Error(`anchor transaction failed: ${JSON.stringify(res.FailedTransaction?.status)}`);
     await client.waitForTransaction({ digest: res.Transaction.digest });

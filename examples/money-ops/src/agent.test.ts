@@ -58,10 +58,7 @@ group("MoneyOpsAgent", () => {
 group("WalletFeed", () => {
   const me = "0xme";
   const tatum = {
-    rpc: async (method: string, params: unknown[]) => {
-      expect(method).toBe("suix_getCoinMetadata");
-      return String(params[0]).endsWith("::usdc::USDC") ? { decimals: 6, symbol: "USDC" } : { decimals: 9, symbol: "SUI" };
-    },
+    coinMetadata: async (coinType: string) => (coinType.endsWith("::usdc::USDC") ? { decimals: 6, symbol: "USDC" } : { decimals: 9, symbol: "SUI" }),
   } as unknown as TatumSui;
   const feed = new WalletFeed(tatum, me);
 
@@ -90,7 +87,7 @@ group("WalletFeed", () => {
 
 group("WalletFeed swap counterparty", () => {
   it("has no counterparty for swaps, even when the sender is us", async () => {
-    const tatum = { rpc: async () => ({ decimals: 6, symbol: "USDC" }) } as unknown as TatumSui;
+    const tatum = { coinMetadata: async () => ({ decimals: 6, symbol: "USDC" }) } as unknown as TatumSui;
     const feed = new WalletFeed(tatum, "0xme");
     const out = await feed.toEvents({ digest: "S", transaction: { data: { sender: "0xme" } }, balanceChanges: [
       { owner: { AddressOwner: "0xme" }, coinType: "a::usdc::USDC", amount: "-1" },

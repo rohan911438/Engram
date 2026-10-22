@@ -73,7 +73,14 @@ export class Tenant {
       sync: () => this.sync(log),
       learn: () => this.learn(log),
       commit: () => this.commit(log, params.message),
-      run: async () => ({ sync: await this.sync(log), learn: await this.learn(log), commit: await this.commit(log, params.message) }),
+      run: async () => {
+        // A wallet-feed outage shouldn't stop the agent learning from what it was told.
+        const sync = await this.sync(log).catch((err: Error) => {
+          log(`Wallet sync skipped: ${err.message}`);
+          return { events: 0, alerts: 0, decisions: [], error: err.message };
+        });
+        return { sync, learn: await this.learn(log), commit: await this.commit(log, params.message) };
+      },
     };
     steps[kind]()
       .then((r) => {

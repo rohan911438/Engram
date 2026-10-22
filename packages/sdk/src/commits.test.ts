@@ -155,9 +155,12 @@ describe("move-event anchors", () => {
     const ep = e.observe({ source: "user", data: 1 });
     create("a", "A", [ep.id]);
     const c = await e.commit("one");
+    const { bcs } = await import("@mysten/sui/bcs");
+    const ev = bcs.struct("Anchored", { sender: bcs.Address, agent_pubkey: bcs.vector(bcs.u8()), commit_id: bcs.vector(bcs.u8()), merkle_root: bcs.vector(bcs.u8()), parent: bcs.vector(bcs.u8()), manifest_blob: bcs.vector(bcs.u8()), timestamp_ms: bcs.u64() });
     const bytes = (h: string) => [...Buffer.from(h, "hex")];
+    // A Tatum client whose gRPC getTransaction returns one BCS-encoded Anchored event.
     const fakeTatum = (root: string) =>
-      ({ rpc: async () => ({ checkpoint: "42", timestampMs: "1", events: [{ type: "0xpkg::anchor::Anchored", parsedJson: { commit_id: bytes(c.id), merkle_root: bytes(root), agent_pubkey: bytes(c.manifest.agentPubKey) } }] }) }) as never;
+      ({ client: { getTransaction: async () => ({ $kind: "Transaction", Transaction: { checkpoint: "42", timestampMs: 1, events: [{ eventType: "0xpkg::anchor::Anchored", bcs: ev.serialize({ sender: "0x1", agent_pubkey: bytes(c.manifest.agentPubKey), commit_id: bytes(c.id), merkle_root: bytes(root), parent: [], manifest_blob: [], timestamp_ms: 1 }).toBytes() }] } }) } }) as never;
     const anchor = { method: "move-event" as const, objectId: "0xpkg", txDigest: "D" };
     expect((await checkMoveAnchor(fakeTatum(c.manifest.merkleRoot), anchor, c)).ok).toBe(true);
     expect((await checkMoveAnchor(fakeTatum("00".repeat(32)), anchor, c)).detail).toMatch(/merkle_root differs/);
