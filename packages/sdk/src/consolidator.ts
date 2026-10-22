@@ -4,7 +4,7 @@ import type { Belief, EpisodeContent } from "./types.js";
 /** One change the consolidator wants to make to the belief set. */
 export type BeliefOp =
   | { op: "create"; key: string; statement: string; confidence: number; evidence: string[]; tags: string[]; reason: string }
-  | { op: "revise"; belief: string; statement: string; confidence: number; evidence: string[]; tags: string[]; reason: string }
+  | { op: "revise"; belief: string; statement: string; confidence: number; evidence: string[]; tags?: string[]; reason: string }
   | { op: "retract"; belief: string; reason: string };
 
 export interface ConsolidationInput {

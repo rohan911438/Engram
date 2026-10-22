@@ -378,6 +378,16 @@ program
   }));
 
 program
+  .command("mcp")
+  .description("run as an MCP server (stdio) for Claude Code, Cursor, Claude Desktop — beliefs, commit, blame, diff, forget, verify as tools")
+  .action(run(async () => {
+    const { runMcp } = await import("./mcp.js");
+    const s = services();
+    const e = Engram.open({ dir: s.dir, remote: s.remote, anchorer: s.anchorer });
+    await runMcp(e, () => s.llm(), program.version() ?? "0.1.0");
+  }));
+
+program
   .command("ui")
   .description("open the inspector: belief graph, timeline, receipts, live verification")
   .option("-p, --port <port>", "port", "4646")

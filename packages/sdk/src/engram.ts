@@ -309,7 +309,7 @@ export class Engram {
     if (!prev) throw new Error(`unknown belief ${op.belief}`);
     const next: Belief =
       op.op === "revise"
-        ? { id: prev.id, version: prev.version + 1, statement: op.statement, confidence: op.confidence, evidence: [...op.evidence].sort(), tags: op.tags.length ? op.tags : prev.tags, supersedes: beliefKey(prev), status: "active", createdAt: now, reason: op.reason }
+        ? { id: prev.id, version: prev.version + 1, statement: op.statement, confidence: op.confidence, evidence: [...op.evidence].sort(), tags: op.tags?.length ? op.tags : prev.tags, supersedes: beliefKey(prev), status: "active", createdAt: now, reason: op.reason }
         : { ...prev, version: prev.version + 1, supersedes: beliefKey(prev), status: "retracted", createdAt: now, reason: op.reason, blobId: undefined };
     this.store.put("beliefs", beliefKey(next), next);
     return next;
