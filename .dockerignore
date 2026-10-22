@@ -11,3 +11,4 @@ Idea
 demo/**/actors.json
 demo/**/live-state.json
 demo/money-ops
+demo/money-ops-offline
