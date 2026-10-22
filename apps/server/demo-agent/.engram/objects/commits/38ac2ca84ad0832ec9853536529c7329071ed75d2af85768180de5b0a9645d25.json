@@ -1,0 +1,46 @@
+{
+  "id": "38ac2ca84ad0832ec9853536529c7329071ed75d2af85768180de5b0a9645d25",
+  "manifest": {
+    "engram": "commit",
+    "v": 1,
+    "agent": "money-ops",
+    "parent": "d0f7d31f5af7ca77e2858c3cef7c8b588288c0502028dd6f45fd1d75db73477c",
+    "ts": 1792678512904,
+    "message": "Months 2–3: habits confirmed",
+    "merkleRoot": "7c13e2536d439a933dc0f475e1cc758342fd4c902c6299c4e59113d0d4998ae9",
+    "beliefs": [
+      "b_monthly_rent@2",
+      "b_salary_payment@2",
+      "b_streaming_subscription@2"
+    ],
+    "tombstones": [],
+    "episodes": {
+      "ep_0cb78befdd56": "1NMnZMpHMg3Sk62YxDLoEqNIdDmJ6GG0peiH7UP8YNw",
+      "ep_13b73f5ef8cd": "CzNO7jdUWjJFUhckgQyk1VsGQ3ChWfYuKHtf7uLFj6E",
+      "ep_53641e89c8dd": "oodGFYPPj-YZ1aJl2smMsP_NbJ_EE6eYRoW0GtqTE6E",
+      "ep_82aab6fd6729": "h-rc9I_zt94LAjhelrp2jF-yx9HQI2mcHBk9rIQa2yo",
+      "ep_af9413395324": "CzSavpsIOVqw1IIJWDel05Zu0VI555VAah7iYnyBCa4",
+      "ep_cc0d45adf1f1": "VxuTjRq1omsMDxPAkhERZfWu316fFf9WyU7cdB_7FI8",
+      "ep_d9dec06e5d38": "5xWXlpX5bmuYbOZzCbsrt6RpDOHLJeiFLiRWqxIkgLg",
+      "ep_01f7d6c29733": "Ir81SYv_07But9A-pL3FlAHDKvjLmYP3lRF1XSAxDbg",
+      "ep_1beabf33f70b": "kBAbky77FwoyFj6ARskJEurjKMd3SgvOB3Lc4Z1jibk",
+      "ep_aad55edab554": "343C4Ofi66OCgcPFPXBUcAvf8LiMeNiluN-okDRLEPY"
+    },
+    "beliefBlobs": {
+      "b_monthly_rent@2": "ywej_szc9gnbxfir2PsVdCV_ltCHlIa0aZ-CYxqbyd0",
+      "b_salary_payment@2": "CxBFIYOkLUFSb8F8o17xCNO0DTiAtfR4mNfFqAYTPMY",
+      "b_streaming_subscription@2": "efBsLHwZ55CHT339FWvIF5pVHmP6hervtQK_ndmuiSQ"
+    },
+    "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed"
+  },
+  "signature": "b1f32a36d6016a6189529e86f4b0c6f2ecd9fe906f41c44413b0dd30b766e9dffc6fba2c0bd0f78be7173b9ef093faba31c937cd5af66af53126a7342a089a09",
+  "manifestBlobId": "PAzxBnKinLL60UemEVHu8Kc79mpu-irOd-pyJ_LJZso",
+  "anchor": {
+    "method": "move-event",
+    "objectId": "0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b",
+    "txDigest": "fJFh8kVer4VNWYyKqVns974Mk2Xf35d4oS6XDr8getE",
+    "checkpoint": "397921635",
+    "timestampMs": 1792678532509,
+    "network": "testnet"
+  }
+}

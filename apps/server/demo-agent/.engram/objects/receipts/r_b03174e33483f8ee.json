@@ -1,0 +1,15 @@
+{
+  "engram": "receipt",
+  "v": 1,
+  "agent": "money-ops",
+  "commitId": "38ac2ca84ad0832ec9853536529c7329071ed75d2af85768180de5b0a9645d25",
+  "ts": 1792678603570,
+  "action": "ALERT[critical]: sent 0.18 SUI to 0xcbed89… — A large outgoing payment of 0.18 SUI was sent to an unrecognized address, which does not match any known payment patterns.",
+  "inputHash": "200b9daedaf341a8c4109319845c01edac681457f525d851ac8a5d8e11bcecc4",
+  "beliefs": [],
+  "proofs": {},
+  "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed",
+  "id": "r_b03174e33483f8ee",
+  "signature": "5d97a7c3960a7187be77fe93fecc4e2e0bc63b22eed068d58af49dc00065d9a284402f27a964c0281f9bc827f0d900125ee8fdf173167d36792bcf5db5f0c608",
+  "blobId": "IPjQDjJTd8CrhWPUozc6Dj2_An5YPkLY5ibxPShlpxQ"
+}

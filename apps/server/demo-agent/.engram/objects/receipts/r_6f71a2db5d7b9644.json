@@ -1,0 +1,28 @@
+{
+  "engram": "receipt",
+  "v": 1,
+  "agent": "money-ops",
+  "commitId": "d0f7d31f5af7ca77e2858c3cef7c8b588288c0502028dd6f45fd1d75db73477c",
+  "ts": 1792678285468,
+  "action": "no alert: sent 0.045 SUI to 0x24983b… — Paid expected monthly rent of 0.045 SUI.",
+  "inputHash": "4ee94cfebbb76bce1fffdfac4002f0cd6f1115051e5ccabcdad854d4d2b7c39b",
+  "beliefs": [
+    "b_monthly_rent@1"
+  ],
+  "proofs": {
+    "b_monthly_rent@1": [
+      {
+        "hash": "773cc774febc15f662a1c6dc92e712b3f12b83a07f3046d3c08f1e939811f480",
+        "left": false
+      },
+      {
+        "hash": "b63fedd22fc5cf63a2f0f92831a2360cb3b056f1546652cb04ace8b762b16505",
+        "left": false
+      }
+    ]
+  },
+  "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed",
+  "id": "r_6f71a2db5d7b9644",
+  "signature": "e352ebbcd80232391ffcc92f2e9d2543c7dbdba40cb25a6bb4e601c1d9b7acd1bf30760201fd0b8a838b31e89943e9776214c332000d7e9e055f2d7a352e7008",
+  "blobId": "zYMgmywwyELm-wo5Y7u5_hJxLSapwkYMW3nUPWmS9LI"
+}

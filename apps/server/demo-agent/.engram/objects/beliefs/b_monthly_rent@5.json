@@ -1,0 +1,23 @@
+{
+  "id": "b_monthly_rent",
+  "version": 5,
+  "statement": "The owner pays 0.05 SUI once a month for rent to 0x24983b7ac21c6cc529b38f691c3733ee5725408194117a4c2a56c0094fac4b04.",
+  "confidence": 0.97,
+  "evidence": [
+    "ep_0cb78befdd56",
+    "ep_13b73f5ef8cd",
+    "ep_53641e89c8dd",
+    "ep_82aab6fd6729",
+    "ep_ae891c285fa0",
+    "ep_d294c4555005"
+  ],
+  "tags": [
+    "rent",
+    "housing"
+  ],
+  "supersedes": "b_monthly_rent@4",
+  "status": "active",
+  "createdAt": 1792678683347,
+  "reason": "The user confirmed the monthly rent increased to 0.05 SUI.",
+  "blobId": "u4aDLfUD_1A3qn46banaXy-3FnOudzMduN6iRFQfj5Y"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "b_scammer_address",
+  "version": 2,
+  "statement": "Address 0xcbed894504f1886d9b34213306fdd910834cc733ce680b051806923910e66a0b is a scammer and any transfers to it are unauthorized theft.",
+  "confidence": 0.95,
+  "evidence": [
+    "ep_3dfd7c7c2de8",
+    "ep_ea7c580e0aca"
+  ],
+  "tags": [
+    "security",
+    "scam"
+  ],
+  "status": "retracted",
+  "createdAt": 1792679853945,
+  "reason": "Retracted duplicate belief that has been superseded by b_scam_address_0xcbed.",
+  "supersedes": "b_scammer_address@1",
+  "blobId": "aaiU5jFtyinVzkZG25whBQHsLZzLtJ_WUYlFibUoE6E"
+}

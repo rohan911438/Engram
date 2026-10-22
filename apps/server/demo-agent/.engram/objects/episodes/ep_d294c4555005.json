@@ -1,0 +1,19 @@
+{
+  "id": "ep_d294c4555005",
+  "ts": 1792678579254,
+  "source": "user",
+  "summary": "owner message",
+  "contentHash": "064448097bf92f58e06d8c845accb191aea8d3cef1cf7d4c29ad10e10e34d918",
+  "keyId": "k_d38dd8c567866bd4",
+  "envelope": {
+    "engram": "episode",
+    "v": 1,
+    "id": "ep_d294c4555005",
+    "keyId": "k_d38dd8c567866bd4",
+    "iv": "MWhlCM/XodfnDxar",
+    "ct": "Cw2yX6yj3WaNfXRARpTCHTAJnTQNfUQusJkIATXYYjtIMfuZ+x/Anbi3rgXZTYydNnWA//tm0FguryltV1M1PKobHVLs005eS3erYXrSG/KXlATyb/ymAl5+Yg==",
+    "tag": "6g4gbePz4Rkgnq/ZXktrrA=="
+  },
+  "consolidatedAt": 1792678683371,
+  "blobId": "K-3IQ5g-JcA693N9yyYz2VBBIYjAwkIsYbmNLwuV3Y8"
+}

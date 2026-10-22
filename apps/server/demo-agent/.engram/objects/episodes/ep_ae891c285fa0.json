@@ -1,0 +1,19 @@
+{
+  "id": "ep_ae891c285fa0",
+  "ts": 1792678534064,
+  "source": "tatum",
+  "summary": "sent 0.05 SUI to 0x24983b…",
+  "contentHash": "c878cac992b14074deed659a9bd5259b78de5d9ee2f7aa924baa468e4155ef67",
+  "keyId": "k_74b2a6227eaed4ea",
+  "envelope": {
+    "engram": "episode",
+    "v": 1,
+    "id": "ep_ae891c285fa0",
+    "keyId": "k_74b2a6227eaed4ea",
+    "iv": "OE+Myd7RJiiiOB1q",
+    "ct": "L0W8T1OzLRHV7h1zmNWU+edhMelkBknkFgXT/swJ8WFDGwD/PiF3eBEy4ZRlt0taTGxdLIneiZGgE4Qc82U/bFKu2xvrshZxKIRNxckM68/EmPQzT2hHz1cp8gPw74eHOc2GEFozMivZBxvzVCKoiQPDgaAQoAhE9kB6/Y91yrpgRZwt7j0NLAZozvK6kztVRRc4YOasClY20ROiaL5dz1BvWRjz9TWiJhevhezQQCk7EK459W8CmUpXWBDYxOmcxvWShJP0afIsdg9MQFxXdMa6IWtkHPDUZTLdnC4oHXVoA9mEFU3mqCmSLLZdNKhzjXQbdcqegq9zW8oN7oBfQyCu0YT93WkohsXg2tsR4peAe08gP08FCXNFNLAHswoB7DpQ2PdMik62RcEWdVI=",
+    "tag": "D1gE8TGKJvKSLH221YdUPQ=="
+  },
+  "consolidatedAt": 1792678683371,
+  "blobId": "nZGOp4PsgXIgmcFEuLXbwLiKdoBQzfavwqbmj0jDN6g"
+}

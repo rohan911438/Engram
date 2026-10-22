@@ -1,0 +1,18 @@
+{
+  "id": "b_salary_payment",
+  "version": 1,
+  "statement": "The owner receives a regular salary payment of 0.21 SUI from 0xeac866f7912c1de63ef8770035780d1964228c9060a399c932da4ab4f511c8d8.",
+  "confidence": 0.95,
+  "evidence": [
+    "ep_13b73f5ef8cd",
+    "ep_cc0d45adf1f1"
+  ],
+  "tags": [
+    "income",
+    "salary"
+  ],
+  "status": "active",
+  "createdAt": 1792678150027,
+  "reason": "The user explicitly confirmed this incoming transfer is their salary.",
+  "blobId": "KnEGnsyevJIyR5TiRUuuYe7Tg0oPyB_nE4nfnSX3S98"
+}

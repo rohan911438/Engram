@@ -1,0 +1,28 @@
+{
+  "engram": "receipt",
+  "v": 1,
+  "agent": "money-ops",
+  "commitId": "38ac2ca84ad0832ec9853536529c7329071ed75d2af85768180de5b0a9645d25",
+  "ts": 1792678579245,
+  "action": "ALERT[warn]: sent 0.05 SUI to 0x24983b… — Rent payment to your landlord was 0.05 SUI instead of the expected 0.045 SUI based on your monthly rent habit.",
+  "inputHash": "147f12d034b95a97f5a488ea4c42cd31e7416c611110012d3280d5af1524ded4",
+  "beliefs": [
+    "b_monthly_rent@2"
+  ],
+  "proofs": {
+    "b_monthly_rent@2": [
+      {
+        "hash": "441a5fa1bff455217f234a38d9978e4fa28fede88443dec562b5b8f0099c4a90",
+        "left": false
+      },
+      {
+        "hash": "b40121bd3f0f12cb3d1fca98f3d7212c020b202c46081b2339792f1d8a79d61b",
+        "left": false
+      }
+    ]
+  },
+  "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed",
+  "id": "r_cce8670f8f5c32c0",
+  "signature": "c969f5f174a56dce0c247abd38588afe4c6098271b42202e34727239b40c2ed97721a08763497f5a9616fa85a5d8e1afa2b469df86016bdaeb7e587dac67750a",
+  "blobId": "6fZU53A6ksAM3YEsXAs13C9TguJVsmVP99b7ns5v9Og"
+}

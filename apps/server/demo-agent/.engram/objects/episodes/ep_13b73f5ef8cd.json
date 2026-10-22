@@ -1,0 +1,19 @@
+{
+  "id": "ep_13b73f5ef8cd",
+  "ts": 1792678129264,
+  "source": "user",
+  "summary": "owner message",
+  "contentHash": "396dbe12439c84f3be4cc5eb249d101ee906ed5a10c6b79596473288c52eaabc",
+  "keyId": "k_287d90c82f1b6b22",
+  "envelope": {
+    "engram": "episode",
+    "v": 1,
+    "id": "ep_13b73f5ef8cd",
+    "keyId": "k_287d90c82f1b6b22",
+    "iv": "mWITHnXDHuLWNHaT",
+    "ct": "sWvFVLDixdYdh09dGdnsftYowHX772H4c2RhKgMe3G7PGDXgWyqrGOCkrHJ7ZsbUD/lVQvETg/0Nn85buO2VIxlWi1vRW2lgsh+0wVYN6oJP/gUL879EWIMauKNCXLALp6cOH5Fu1D49Qh3P2yuzwkG6Luh70/i0qKLv87YCdj9HBozLgRp/ziNy8hkoxV5Bp1dpjqtIPgyuQydSWhX8SyU1kxyDJTm8+YLkglYiJ9cTWFJ0sHh3O1dKWy1hFmftWF7k5H/EEGRGVx6ZHOBj9N4DzrIaTDJm7hltf5Oz",
+    "tag": "WrWYLfaqnbEQ7FY36JICww=="
+  },
+  "consolidatedAt": 1792678150061,
+  "blobId": "CzNO7jdUWjJFUhckgQyk1VsGQ3ChWfYuKHtf7uLFj6E"
+}

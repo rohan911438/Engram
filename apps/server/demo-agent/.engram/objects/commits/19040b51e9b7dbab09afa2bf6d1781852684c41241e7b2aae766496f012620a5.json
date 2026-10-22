@@ -1,0 +1,54 @@
+{
+  "id": "19040b51e9b7dbab09afa2bf6d1781852684c41241e7b2aae766496f012620a5",
+  "manifest": {
+    "engram": "commit",
+    "v": 1,
+    "agent": "money-ops",
+    "parent": "38ac2ca84ad0832ec9853536529c7329071ed75d2af85768180de5b0a9645d25",
+    "ts": 1792679682181,
+    "message": "Month 4: rent change + scam address",
+    "merkleRoot": "392bf9cbb518e633cf304c243c617588634b707de8bb2db0fff9efd3b9e056aa",
+    "beliefs": [
+      "b_monthly_rent@5",
+      "b_salary_payment@3",
+      "b_scam_address_0xcbed@1",
+      "b_scammer_address@1",
+      "b_streaming_subscription@3"
+    ],
+    "tombstones": [],
+    "episodes": {
+      "ep_0cb78befdd56": "1NMnZMpHMg3Sk62YxDLoEqNIdDmJ6GG0peiH7UP8YNw",
+      "ep_13b73f5ef8cd": "CzNO7jdUWjJFUhckgQyk1VsGQ3ChWfYuKHtf7uLFj6E",
+      "ep_53641e89c8dd": "oodGFYPPj-YZ1aJl2smMsP_NbJ_EE6eYRoW0GtqTE6E",
+      "ep_82aab6fd6729": "h-rc9I_zt94LAjhelrp2jF-yx9HQI2mcHBk9rIQa2yo",
+      "ep_ae891c285fa0": "nZGOp4PsgXIgmcFEuLXbwLiKdoBQzfavwqbmj0jDN6g",
+      "ep_d294c4555005": "K-3IQ5g-JcA693N9yyYz2VBBIYjAwkIsYbmNLwuV3Y8",
+      "ep_af9413395324": "CzSavpsIOVqw1IIJWDel05Zu0VI555VAah7iYnyBCa4",
+      "ep_cc0d45adf1f1": "VxuTjRq1omsMDxPAkhERZfWu316fFf9WyU7cdB_7FI8",
+      "ep_d9dec06e5d38": "5xWXlpX5bmuYbOZzCbsrt6RpDOHLJeiFLiRWqxIkgLg",
+      "ep_3dfd7c7c2de8": "EMM5aLlVfmzP9nl6ENgqY02lHBQ3sYTZ0CbaNJ00DnI",
+      "ep_ea7c580e0aca": "dIdDTSWqtYfvVoO_7vlJRoPlGYk4qHOROD_9W5vtn80",
+      "ep_01f7d6c29733": "Ir81SYv_07But9A-pL3FlAHDKvjLmYP3lRF1XSAxDbg",
+      "ep_1beabf33f70b": "kBAbky77FwoyFj6ARskJEurjKMd3SgvOB3Lc4Z1jibk",
+      "ep_aad55edab554": "343C4Ofi66OCgcPFPXBUcAvf8LiMeNiluN-okDRLEPY"
+    },
+    "beliefBlobs": {
+      "b_monthly_rent@5": "u4aDLfUD_1A3qn46banaXy-3FnOudzMduN6iRFQfj5Y",
+      "b_salary_payment@3": "879y5Mxqj_5SDWouwYWYHqAb456xISuDgG7qQRQ9XJQ",
+      "b_scam_address_0xcbed@1": "1JBT_Wp9l8D2y0HEihdF6V6cS-w73c4K2BOsoAlj3wg",
+      "b_scammer_address@1": "UMLVGdNPmQ76gZEuqeW18zekAtNjNV72axqD5prJ8qU",
+      "b_streaming_subscription@3": "FoD8r1OvBXk2dh5BvnDSp7zEvd0DLkTH4HckYgP5uz4"
+    },
+    "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed"
+  },
+  "signature": "2723d8da3fae26e59700833fc5fceefd66d3fbb6042a4effbf52174b24564620d62132a390e405e02dece5714da126f81020b2f0ea8f332b45eea9c80d5abd07",
+  "manifestBlobId": "YI30MCNaOGF-IrJmHcI_dIFdGuHj0YstRQmdW8oEVtM",
+  "anchor": {
+    "method": "move-event",
+    "objectId": "0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b",
+    "txDigest": "BPFs7EqazA9nxUtr5rGnjcAJb4eUqxsNTUcA2L5aT4yx",
+    "checkpoint": "397926925",
+    "timestampMs": 1792679705365,
+    "network": "testnet"
+  }
+}

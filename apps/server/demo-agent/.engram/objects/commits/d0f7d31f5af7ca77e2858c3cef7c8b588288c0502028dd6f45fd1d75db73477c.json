@@ -1,0 +1,40 @@
+{
+  "id": "d0f7d31f5af7ca77e2858c3cef7c8b588288c0502028dd6f45fd1d75db73477c",
+  "manifest": {
+    "engram": "commit",
+    "v": 1,
+    "agent": "money-ops",
+    "parent": null,
+    "ts": 1792678217271,
+    "message": "Month 1: salary, rent, subscription",
+    "merkleRoot": "99ec6f7651398d45e95732ec42b4c88e046624ff539104fd2d3308045160db3d",
+    "beliefs": [
+      "b_monthly_rent@1",
+      "b_salary_payment@1",
+      "b_streaming_subscription@1"
+    ],
+    "tombstones": [],
+    "episodes": {
+      "ep_0cb78befdd56": "1NMnZMpHMg3Sk62YxDLoEqNIdDmJ6GG0peiH7UP8YNw",
+      "ep_13b73f5ef8cd": "CzNO7jdUWjJFUhckgQyk1VsGQ3ChWfYuKHtf7uLFj6E",
+      "ep_cc0d45adf1f1": "VxuTjRq1omsMDxPAkhERZfWu316fFf9WyU7cdB_7FI8",
+      "ep_01f7d6c29733": "Ir81SYv_07But9A-pL3FlAHDKvjLmYP3lRF1XSAxDbg"
+    },
+    "beliefBlobs": {
+      "b_monthly_rent@1": "G1YvEoAGmtrEXu9bWTgi_Ru5WMTCGc70spA06qWjluk",
+      "b_salary_payment@1": "KnEGnsyevJIyR5TiRUuuYe7Tg0oPyB_nE4nfnSX3S98",
+      "b_streaming_subscription@1": "CIg5_qss9FCzVAluLNwxJ6lUaTSTNlrdYVg0JlDh4As"
+    },
+    "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed"
+  },
+  "signature": "a57693eb12913c499e5b230016198aac48bcbf68ded3a7f5e0cdfefa6c29895dc53fdbe81e9e088425171dcbced100329adf1ac30097aae9de74b4c69273b30a",
+  "manifestBlobId": "qJnLv3IRt9JkxLLShObFWaGxj6FT3ID2acRwX374x2U",
+  "anchor": {
+    "method": "move-event",
+    "objectId": "0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b",
+    "txDigest": "GRNWPaGFF4H5gAtKiGV8c6TRdiTHX4roNUeRQWVWa6Xt",
+    "checkpoint": "397920256",
+    "timestampMs": 1792678234629,
+    "network": "testnet"
+  }
+}

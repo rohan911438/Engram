@@ -62,7 +62,9 @@ export class Tenant {
 
   /** (Re)opens the Engram repo with the remote that matches the storage setting. */
   private open() {
-    const opts = { dir: this.dir, remote: this.remote(), anchorer: this.services.anchorer };
+    // A shipped demo has no keys: open it read-only (history, beliefs, receipts, verify still work).
+    const keyless = this.readOnly && existsSync(join(this.dir, ".engram", "config.json")) && !existsSync(join(this.dir, ".engram", "agent.key"));
+    const opts = { dir: this.dir, remote: this.remote(), anchorer: this.services.anchorer, readOnly: keyless };
     this.engram = existsSync(join(this.dir, ".engram", "config.json")) ? Engram.open(opts) : Engram.init(agentName(this.address), opts);
     this.agent = this.readOnly ? null : new MoneyOpsAgent(this.engram, lazyLlm(this.services.llm));
   }

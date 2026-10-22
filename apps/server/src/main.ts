@@ -12,7 +12,7 @@ const s = servicesFromEnv();
 const services = { remote: s.remote, anchorer: s.anchorer, tatum: s.tatum, llm: () => s.llm(), remoteFor: s.remoteFor };
 const dataDir = resolve(process.env.ENGRAM_DATA ?? join(root, "data"));
 // The public demo is the live run with real transfers (mainnet if it exists, else testnet).
-const demoCandidates = [process.env.ENGRAM_DEMO_DIR, join(root, "demo", "money-ops-live-mainnet"), join(root, "demo", "money-ops-live-testnet")];
+const demoCandidates = [process.env.ENGRAM_DEMO_DIR, join(root, "demo", "money-ops-live-mainnet"), join(root, "demo", "money-ops-live-testnet"), join(root, "apps", "server", "demo-agent")];
 const demoDir = resolve(demoCandidates.find((d) => d && existsSync(join(d, ".engram", "config.json"))) ?? join(root, "demo", "money-ops-live-mainnet"));
 const staticDir = [process.env.ENGRAM_WEB_DIST, join(root, "apps", "web", "dist")].find((d) => d && existsSync(join(d, "index.html"))) ?? null;
 

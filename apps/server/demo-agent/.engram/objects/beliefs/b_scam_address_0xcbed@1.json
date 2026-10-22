@@ -1,0 +1,18 @@
+{
+  "id": "b_scam_address_0xcbed",
+  "version": 1,
+  "statement": "Address 0xcbed894504f1886d9b34213306fdd910834cc733ce680b051806923910e66a0b is a scam address and any payments to it represent theft.",
+  "confidence": 0.97,
+  "evidence": [
+    "ep_3dfd7c7c2de8",
+    "ep_ea7c580e0aca"
+  ],
+  "tags": [
+    "security",
+    "scam"
+  ],
+  "status": "active",
+  "createdAt": 1792678683352,
+  "reason": "The user explicitly identified this counterparty as a scammer following an unauthorized transfer.",
+  "blobId": "1JBT_Wp9l8D2y0HEihdF6V6cS-w73c4K2BOsoAlj3wg"
+}

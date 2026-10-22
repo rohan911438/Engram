@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "agent": "money-ops",
+  "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed",
+  "createdAt": 1792678102684,
+  "namespaces": {
+    "episodes": "engram-money-ops-episodes",
+    "beliefs": "engram-money-ops-beliefs",
+    "commits": "engram-money-ops-commits",
+    "receipts": "engram-money-ops-receipts"
+  }
+}

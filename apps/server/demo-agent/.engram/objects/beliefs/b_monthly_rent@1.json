@@ -1,0 +1,18 @@
+{
+  "id": "b_monthly_rent",
+  "version": 1,
+  "statement": "The owner pays 0.045 SUI once a month for rent to 0x24983b7ac21c6cc529b38f691c3733ee5725408194117a4c2a56c0094fac4b04.",
+  "confidence": 0.95,
+  "evidence": [
+    "ep_0cb78befdd56",
+    "ep_13b73f5ef8cd"
+  ],
+  "tags": [
+    "rent",
+    "housing"
+  ],
+  "status": "active",
+  "createdAt": 1792678150029,
+  "reason": "The user explicitly confirmed this monthly transfer is their rent payment.",
+  "blobId": "G1YvEoAGmtrEXu9bWTgi_Ru5WMTCGc70spA06qWjluk"
+}

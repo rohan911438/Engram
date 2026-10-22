@@ -1,0 +1,47 @@
+{
+  "engram": "receipt",
+  "v": 1,
+  "agent": "money-ops",
+  "commitId": "19040b51e9b7dbab09afa2bf6d1781852684c41241e7b2aae766496f012620a5",
+  "ts": 1792679787758,
+  "action": "ALERT[critical]: sent 0.025 SUI to 0xcbed89… — Outgoing transfer detected to a known scam address representing theft.",
+  "inputHash": "e1a303af6bdb318666c2b588080f689c3de0f5995f7b542a47bcde11e4bf1e59",
+  "beliefs": [
+    "b_scam_address_0xcbed@1",
+    "b_scammer_address@1"
+  ],
+  "proofs": {
+    "b_scam_address_0xcbed@1": [
+      {
+        "hash": "1a3190fba89099b86afda5eee7ce11951bfb125e65ebd45a30e1477ad13b0717",
+        "left": false
+      },
+      {
+        "hash": "759fadd2bfa54e62ac1d161878e34d4a2433d8a61b9049f115492fe25014de18",
+        "left": true
+      },
+      {
+        "hash": "95e71ad15f3f770bf60bec4e9554c063e676b070e8095dcc8fa321b8c8aeb6e1",
+        "left": false
+      }
+    ],
+    "b_scammer_address@1": [
+      {
+        "hash": "e006dc359da60e0e79434f464cdf3aaacfa517ca1bd53d6ac6759aee0621b690",
+        "left": true
+      },
+      {
+        "hash": "759fadd2bfa54e62ac1d161878e34d4a2433d8a61b9049f115492fe25014de18",
+        "left": true
+      },
+      {
+        "hash": "95e71ad15f3f770bf60bec4e9554c063e676b070e8095dcc8fa321b8c8aeb6e1",
+        "left": false
+      }
+    ]
+  },
+  "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed",
+  "id": "r_5080ccb4fd9c3869",
+  "signature": "c1b79ee220f143113fef886c754cca6dd76b0372e153dba73a9b768a8226a3d7064f9acab584a0a8c5847ecf1ae1bfc47352689f1fbfd212ef48e9ab607ee60f",
+  "blobId": "MEaaqe3Y6lXSSZZyci5Zr7OA6DUtQRgjsCZO8GfYB-s"
+}

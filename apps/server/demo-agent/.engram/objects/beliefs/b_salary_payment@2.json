@@ -1,0 +1,21 @@
+{
+  "id": "b_salary_payment",
+  "version": 2,
+  "statement": "The owner receives a regular salary payment of 0.21 SUI from 0xeac866f7912c1de63ef8770035780d1964228c9060a399c932da4ab4f511c8d8.",
+  "confidence": 0.97,
+  "evidence": [
+    "ep_13b73f5ef8cd",
+    "ep_af9413395324",
+    "ep_cc0d45adf1f1",
+    "ep_d9dec06e5d38"
+  ],
+  "tags": [
+    "income",
+    "salary"
+  ],
+  "supersedes": "b_salary_payment@1",
+  "status": "active",
+  "createdAt": 1792678404316,
+  "reason": "Additional salary payments reinforce the pattern of regular incoming funds.",
+  "blobId": "CxBFIYOkLUFSb8F8o17xCNO0DTiAtfR4mNfFqAYTPMY"
+}

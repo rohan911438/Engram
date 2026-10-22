@@ -1,0 +1,21 @@
+{
+  "id": "b_streaming_subscription",
+  "version": 3,
+  "statement": "The owner pays 0.0012 SUI for a streaming subscription to 0x1439f6238bbc1a0373fa5a2b1b843f96e05af65915d1d2a1f313031f4d53f4cb.",
+  "confidence": 0.97,
+  "evidence": [
+    "ep_01f7d6c29733",
+    "ep_13b73f5ef8cd",
+    "ep_1beabf33f70b",
+    "ep_aad55edab554"
+  ],
+  "tags": [
+    "subscription",
+    "entertainment"
+  ],
+  "supersedes": "b_streaming_subscription@2",
+  "status": "active",
+  "createdAt": 1792678423199,
+  "reason": "Observed further recurring streaming subscription payments to the service address.",
+  "blobId": "FoD8r1OvBXk2dh5BvnDSp7zEvd0DLkTH4HckYgP5uz4"
+}

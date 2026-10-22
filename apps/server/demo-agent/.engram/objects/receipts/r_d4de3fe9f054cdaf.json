@@ -1,0 +1,32 @@
+{
+  "engram": "receipt",
+  "v": 1,
+  "agent": "money-ops",
+  "commitId": "19040b51e9b7dbab09afa2bf6d1781852684c41241e7b2aae766496f012620a5",
+  "ts": 1792679783138,
+  "action": "no alert: sent 0.05 SUI to 0x24983b… — This matches your expected monthly rent payment of 0.05 SUI.",
+  "inputHash": "6c3e4c53593e5486f5305d6739ef33ab694e32ad35077d76451d60708585591d",
+  "beliefs": [
+    "b_monthly_rent@5"
+  ],
+  "proofs": {
+    "b_monthly_rent@5": [
+      {
+        "hash": "d5f4c3a5ae19cf52029611812cea3b5ae977b50b6c95d8863e5950779f14e8c4",
+        "left": false
+      },
+      {
+        "hash": "1f45fc774c83132defa7e2acb93015b80426d623007d7cf9f25a44991378ffb2",
+        "left": false
+      },
+      {
+        "hash": "95e71ad15f3f770bf60bec4e9554c063e676b070e8095dcc8fa321b8c8aeb6e1",
+        "left": false
+      }
+    ]
+  },
+  "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed",
+  "id": "r_d4de3fe9f054cdaf",
+  "signature": "ea523d15632536b6d3959ba837c724a55ab72f27881ca216e9b8c2cd0d8bc004154084610ff047a061d09e1daa9967e7d48423718cf314441c5e6d295a17a004",
+  "blobId": "3c-DVDIXgT9isMaf1fVFt3GSauUCa0DIOUN2W6N_OCI"
+}

@@ -1,0 +1,54 @@
+{
+  "id": "2fd1a1c64b5e0b3d6719180d7d28d976a3760977430593fd6132694cc3ba3911",
+  "manifest": {
+    "engram": "commit",
+    "v": 1,
+    "agent": "money-ops",
+    "parent": "19040b51e9b7dbab09afa2bf6d1781852684c41241e7b2aae766496f012620a5",
+    "ts": 1792679884130,
+    "message": "Month 5: applying what it learned",
+    "merkleRoot": "18090ac4d762522910c07bdaa8df7d5ddab9021b1f3036032b03bb58bc9d7efe",
+    "beliefs": [
+      "b_monthly_rent@6",
+      "b_salary_payment@3",
+      "b_scam_address_0xcbed@2",
+      "b_streaming_subscription@3"
+    ],
+    "tombstones": [],
+    "episodes": {
+      "ep_0cb78befdd56": "1NMnZMpHMg3Sk62YxDLoEqNIdDmJ6GG0peiH7UP8YNw",
+      "ep_13b73f5ef8cd": "CzNO7jdUWjJFUhckgQyk1VsGQ3ChWfYuKHtf7uLFj6E",
+      "ep_1acc5a79f8b3": "KnJepE5ekRIabA0nHctrMwD61eoR7ju_XLgnXWi1HH0",
+      "ep_53641e89c8dd": "oodGFYPPj-YZ1aJl2smMsP_NbJ_EE6eYRoW0GtqTE6E",
+      "ep_82aab6fd6729": "h-rc9I_zt94LAjhelrp2jF-yx9HQI2mcHBk9rIQa2yo",
+      "ep_ae891c285fa0": "nZGOp4PsgXIgmcFEuLXbwLiKdoBQzfavwqbmj0jDN6g",
+      "ep_d294c4555005": "K-3IQ5g-JcA693N9yyYz2VBBIYjAwkIsYbmNLwuV3Y8",
+      "ep_af9413395324": "CzSavpsIOVqw1IIJWDel05Zu0VI555VAah7iYnyBCa4",
+      "ep_cc0d45adf1f1": "VxuTjRq1omsMDxPAkhERZfWu316fFf9WyU7cdB_7FI8",
+      "ep_d9dec06e5d38": "5xWXlpX5bmuYbOZzCbsrt6RpDOHLJeiFLiRWqxIkgLg",
+      "ep_3dfd7c7c2de8": "EMM5aLlVfmzP9nl6ENgqY02lHBQ3sYTZ0CbaNJ00DnI",
+      "ep_ea7c580e0aca": "dIdDTSWqtYfvVoO_7vlJRoPlGYk4qHOROD_9W5vtn80",
+      "ep_f66b0d7b5c00": "FC-92hYt6rX2P8oJy-pvKRMbOAW0g3V2DranpmQx-Ss",
+      "ep_01f7d6c29733": "Ir81SYv_07But9A-pL3FlAHDKvjLmYP3lRF1XSAxDbg",
+      "ep_1beabf33f70b": "kBAbky77FwoyFj6ARskJEurjKMd3SgvOB3Lc4Z1jibk",
+      "ep_aad55edab554": "343C4Ofi66OCgcPFPXBUcAvf8LiMeNiluN-okDRLEPY"
+    },
+    "beliefBlobs": {
+      "b_monthly_rent@6": "ACYj0-b2bTQVAPlY2zInyhPUpMB_xSgyk9azFZa8xRA",
+      "b_salary_payment@3": "879y5Mxqj_5SDWouwYWYHqAb456xISuDgG7qQRQ9XJQ",
+      "b_scam_address_0xcbed@2": "XGpdnv6QThPqpMm8NjsBtbiiAgbVuz6XgxzMOLPMcZw",
+      "b_streaming_subscription@3": "FoD8r1OvBXk2dh5BvnDSp7zEvd0DLkTH4HckYgP5uz4"
+    },
+    "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed"
+  },
+  "signature": "1df8b302aa3726dd634a52a9b64f6e3af26397b6aeb76782af6b5626066de1c45fd0f40d6c96c0dfd634222d0259d0573bfacf9f68ef3cfcff6ad7f2507e9801",
+  "manifestBlobId": "SmglWW_swvwclEXSYpUsrPJGICPPprw91mjP8JXU8-0",
+  "anchor": {
+    "method": "move-event",
+    "objectId": "0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b",
+    "txDigest": "ArLtGfg5ChjDFJHrAZzgWiqv2WMrDjhG1tfin868Z1vb",
+    "checkpoint": "397927899",
+    "timestampMs": 1792679916453,
+    "network": "testnet"
+  }
+}

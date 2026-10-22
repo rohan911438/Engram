@@ -1,0 +1,18 @@
+{
+  "id": "b_scammer_address",
+  "version": 1,
+  "statement": "Address 0xcbed894504f1886d9b34213306fdd910834cc733ce680b051806923910e66a0b is a scammer and any transfers to it are unauthorized theft.",
+  "confidence": 0.95,
+  "evidence": [
+    "ep_3dfd7c7c2de8",
+    "ep_ea7c580e0aca"
+  ],
+  "tags": [
+    "security",
+    "scam"
+  ],
+  "status": "active",
+  "createdAt": 1792678650601,
+  "reason": "The owner flagged an outgoing transfer to this address as theft and identified the counterparty as a scammer.",
+  "blobId": "UMLVGdNPmQ76gZEuqeW18zekAtNjNV72axqD5prJ8qU"
+}

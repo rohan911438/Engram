@@ -1,0 +1,28 @@
+{
+  "engram": "receipt",
+  "v": 1,
+  "agent": "money-ops",
+  "commitId": "d0f7d31f5af7ca77e2858c3cef7c8b588288c0502028dd6f45fd1d75db73477c",
+  "ts": 1792678296486,
+  "action": "no alert: received 0.21 SUI from 0xeac866… — Received expected salary payment of 0.21 SUI from your employer.",
+  "inputHash": "55b49dd665a2ad36b72423d71eeca89bd9e0d6b0672a2a4495b77a99e0d46ccc",
+  "beliefs": [
+    "b_salary_payment@1"
+  ],
+  "proofs": {
+    "b_salary_payment@1": [
+      {
+        "hash": "134a714020a91f6625513f0b5aa1a83352fbcb59013c1cdd4247e853e3fb7ab7",
+        "left": true
+      },
+      {
+        "hash": "b63fedd22fc5cf63a2f0f92831a2360cb3b056f1546652cb04ace8b762b16505",
+        "left": false
+      }
+    ]
+  },
+  "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed",
+  "id": "r_23efeaafa87dc615",
+  "signature": "4c4432c50e87faa0edf64703e408b00e72c8b40478414a9652d699c663f1ca1e212e48755de14f6cb7efbb3f53733033e0519604822840fc5ef76b4b06f2b303",
+  "blobId": "EqOvqFklw_bFao-SPhGtiRZqm1NTbiOVFa4n9VMWnhM"
+}

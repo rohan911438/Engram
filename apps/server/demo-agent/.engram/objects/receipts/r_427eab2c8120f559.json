@@ -1,0 +1,24 @@
+{
+  "engram": "receipt",
+  "v": 1,
+  "agent": "money-ops",
+  "commitId": "d0f7d31f5af7ca77e2858c3cef7c8b588288c0502028dd6f45fd1d75db73477c",
+  "ts": 1792678290575,
+  "action": "no alert: sent 0.0012 SUI to 0x1439f6… — Paid expected streaming subscription fee of 0.0012 SUI.",
+  "inputHash": "12ce9b969a1f3f31bbca03f401b54992a06317eba7970695bcec2346cbfb64bc",
+  "beliefs": [
+    "b_streaming_subscription@1"
+  ],
+  "proofs": {
+    "b_streaming_subscription@1": [
+      {
+        "hash": "d13d80f46852dee74f9e50706c65583ed770912c3f11487187d9ef792fdec9cf",
+        "left": true
+      }
+    ]
+  },
+  "agentPubKey": "0e648084a79cb0146ee4b89d867cc5108b5cb53b539c9d7fac6b0e890d52eeed",
+  "id": "r_427eab2c8120f559",
+  "signature": "de6942046490c548f2f145b8d8c777db5a672af679bfa4414ca249a32237b39c1378332bc297e624e0da247396e2cc9eca9d3009dff01bdc8815f917d5a8240b",
+  "blobId": "FbuA6JInux5FN6-bhi5WfCSzQjkm3bt7eOJXi10XVCo"
+}
