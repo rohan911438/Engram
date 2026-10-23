@@ -6,6 +6,8 @@ with every snapshot anchored on Sui and verified through [Tatum](https://tatum.i
 
 > Built for the Tatum × Walrus **Total Recall** hackathon (Track 02 — Smart Agents).
 
+**Live demo:** [engram-blond.vercel.app](https://engram-blond.vercel.app) · API: [engram-api-ohae.onrender.com](https://engram-api-ohae.onrender.com)
+
 ```
 $ engram blame b_monthly_rent
 b_monthly_rent@3  0.97  The user pays 500 USDC for rent to 0x7a11d10d…0000 on the 1st of every month.
@@ -113,8 +115,8 @@ await mind.verify(agent.lastReceipt!.id);          // signature → proofs → W
 ### Link a CLI / SDK agent to the web app
 
 ```bash
-$ engram link --server https://<your-engram-app>
-  Open https://<your-engram-app>/link?code=K7QF-29XM
+$ engram link --server https://engram-blond.vercel.app
+  Open https://engram-blond.vercel.app/link?code=K7QF-29XM
   and approve code K7QF-29XM with your Sui wallet.
 ✔ linked to wallet 0xfe2cfd89…7b46
 ✔ synced 2 commits and 0 receipts — verified by the server
@@ -200,6 +202,31 @@ Tools: `engram_status`, `engram_remember`, `engram_beliefs` (by topic or at a pa
 
 More: [`docs/spike-findings.md`](docs/spike-findings.md) (what we measured on Walrus Memory and Tatum).
 
+## Deploy
+
+**Frontend (Vercel)** — set the `VITE_API_URL` if deploying to a custom domain; otherwise the
+root `vercel.json` rewrites `/api/*` to the Render backend automatically.
+
+```bash
+vercel --prod   # from repo root
+```
+
+**Backend (Render, Docker)** — the `render.yaml` at the repo root configures the service.
+Set these env vars in the Render dashboard (all marked `sync: false`):
+
+| Var | What it is |
+|---|---|
+| `TATUM_API_KEY_MAINNET` | Tatum API key (Sui gRPC) |
+| `MEMWAL_KEY` | Walrus Memory account owner Ed25519 private key |
+| `MEMWAL_ACCOUNT_ID` | Walrus Memory account object ID |
+| `SUI_MNEMONIC` | 12-word mnemonic for the signing wallet |
+| `GEMINI_API_KEYS` | Comma-separated Gemini API keys |
+| `ENGRAM_ANCHOR_PACKAGE` | Move package ID of `engram_anchor` |
+| `ENGRAM_PUBLIC_URL` | Public URL of this Render deployment |
+
+The `apps/server/demo-agent/` directory is baked into the Docker image and loaded
+automatically as the read-only public demo.
+
 ## Honest limits
 
 - **Forgetting** makes an episode unreadable to everyone holding only the ciphertext. It can't
@@ -214,11 +241,13 @@ More: [`docs/spike-findings.md`](docs/spike-findings.md) (what we measured on Wa
 ## Repo layout
 
 ```
-packages/sdk        @rohankumar4179/engram-sdk — core library (49+ tests)
-packages/cli        engram CLI + local inspector server
-apps/inspector      web inspector (React, shadcn/ui, React Flow)
+packages/sdk        @rohankumar4179/engram-sdk — core library (62+ tests)
+packages/cli        @rohankumar4179/engram CLI + MCP server
+apps/web            web inspector + hosted agent UI (React, shadcn/ui, React Flow)
+apps/server         Express API server (auth, jobs, agent tenants, link flow)
 examples/money-ops  wallet-watching agent (Tatum feed, replay story)
-docs/               spike findings, demo transcript
+contracts/          engram_anchor Move package (Sui testnet + mainnet)
+docs/               spike findings, blog post, video script
 ```
 
 ## Built with

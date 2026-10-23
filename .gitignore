@@ -19,3 +19,5 @@ contracts/*/build/
 # the public demo agent ships without keys (opened read-only)
 !apps/server/demo-agent/.engram/
 !apps/server/demo-agent/.engram/**
+
+.vercel
