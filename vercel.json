@@ -1,0 +1,9 @@
+{
+  "buildCommand": "pnpm --filter @engram/web build",
+  "outputDirectory": "apps/web/dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://engram-api-ohae.onrender.com/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
