@@ -191,7 +191,7 @@ export function HighlightGrid({
                   <p
                     className={cn(
                       "relative z-[2] whitespace-nowrap font-mono text-[13px] font-medium uppercase transition-colors duration-200 select-none",
-                      isActive ? "text-white" : "text-neutral-600 dark:text-white/70",
+                      isActive ? "text-foreground" : "text-neutral-600 dark:text-foreground/70",
                     )}
                   >
                     ( {cell.label} )

@@ -27,18 +27,19 @@ export function MemoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Memory</h1>
+        <div className="label"><span className="text-brand">●</span> episodes</div>
+        <h1 className="mt-2 font-display text-5xl font-semibold tracking-[-0.05em]">Memory<span className="text-brand">.</span></h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Raw episodes — wallet events and what you told the agent. Each is encrypted with its own key; the ciphertext lives on Walrus. Forgetting destroys the key, so it can never be read again, and the next commit records a tombstone.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => (
-          <button key={f} type="button" onClick={() => setFilter(f)} className={cn("rounded-full border px-3 py-1 text-xs capitalize transition", filter === f ? "border-white/20 bg-white/[0.08] text-foreground" : "border-white/[0.07] text-muted-foreground hover:text-foreground")}>
+          <button key={f} type="button" onClick={() => setFilter(f)} className={cn("rounded-full border px-3 py-1 text-xs capitalize transition", filter === f ? "border-brand bg-brand font-medium text-ink" : "border-border text-muted-foreground hover:text-foreground")}>
             {f === "tatum" ? "wallet" : f === "user" ? "owner said" : f}
           </button>
         ))}
-        <label className="ml-auto flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.02] px-3 py-1.5 text-sm">
+        <label className="ml-auto flex items-center gap-2 rounded-full border border-border bg-white/[0.02] px-3 py-1.5 text-sm">
           <Search className="size-3.5 text-muted-foreground" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search episodes" className="w-44 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60" />
         </label>
@@ -48,7 +49,7 @@ export function MemoryPage() {
       ) : rows.length === 0 ? (
         <Empty>No episodes here yet.</Empty>
       ) : (
-        <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-white/[0.07] bg-[#08080b]">
+        <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-2xl border border-border bg-surface-1">
           {rows.map((e) => (
             <Row key={e.id} e={e} canForget={!ctx.readOnly} onForgot={() => setNonce((n) => n + 1)} />
           ))}
@@ -78,7 +79,7 @@ function Row({ e, canForget, onForgot }: { e: EpisodeView; canForget: boolean; o
   };
   return (
     <li className={cn("flex flex-wrap items-center gap-4 px-4 py-3 transition hover:bg-white/[0.02]", e.forgotten && "opacity-60")}>
-      <span className={cn("flex size-8 items-center justify-center rounded-lg border border-white/[0.07]", e.source === "user" ? "text-[#c4b5fd]" : "text-[#67e8f9]")}>
+      <span className={cn("flex size-8 items-center justify-center rounded-lg border border-border", e.source === "user" ? "text-brand" : "text-brand-2")}>
         <Icon className="size-4" />
       </span>
       <div className="min-w-0 flex-1">
@@ -86,22 +87,22 @@ function Row({ e, canForget, onForgot }: { e: EpisodeView; canForget: boolean; o
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[11px] text-muted-foreground">
           <span>{fmtTime(e.ts)}</span>
           <span className="font-mono">{e.id}</span>
-          {e.blobId ? <span className="flex items-center gap-1">Walrus <Hash value={e.blobId} href={links.walrusBlob(e.blobId)} /></span> : !e.forgotten && <span className="text-amber-300/80">not pushed yet</span>}
-          {!e.forgotten && <span className={e.consolidated ? "text-emerald-300/80" : "text-muted-foreground"}>{e.consolidated ? "learned" : "awaiting sleep"}</span>}
+          {e.blobId ? <span className="flex items-center gap-1">Walrus <Hash value={e.blobId} href={links.walrusBlob(e.blobId)} /></span> : !e.forgotten && <span className="text-warn/80">not pushed yet</span>}
+          {!e.forgotten && <span className={e.consolidated ? "text-ok/80" : "text-muted-foreground"}>{e.consolidated ? "learned" : "awaiting sleep"}</span>}
         </div>
-        {msg && <div className="mt-1 text-xs text-emerald-300">{msg}</div>}
+        {msg && <div className="mt-1 text-xs text-ok">{msg}</div>}
       </div>
       {canForget && !e.forgotten && (
         confirm ? (
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Destroy its key forever?</span>
-            <button type="button" disabled={busy} onClick={forget} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-red-500/90 px-3 text-xs font-medium text-white hover:bg-red-500">
+            <button type="button" disabled={busy} onClick={forget} className="inline-flex h-8 items-center gap-1.5 rounded-full bg-destructive/90 px-3 text-xs font-medium text-foreground hover:bg-destructive">
               {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Eraser className="size-3.5" />} Forget
             </button>
             <button type="button" onClick={() => setConfirm(false)} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
           </div>
         ) : (
-          <button type="button" onClick={() => setConfirm(true)} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs text-muted-foreground transition hover:border-red-400/40 hover:text-red-300">
+          <button type="button" onClick={() => setConfirm(true)} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-foreground/12 px-3 text-xs text-muted-foreground transition hover:border-destructive/40 hover:text-destructive">
             <Eraser className="size-3.5" /> Forget
           </button>
         )

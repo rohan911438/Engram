@@ -52,13 +52,13 @@ export function StorageCard() {
   const currentIndex = s ? (s.next === "done" ? STEPS.length : order.indexOf(s.next as (typeof order)[number])) : -1;
 
   return (
-    <section className="rounded-2xl border border-white/[0.07] bg-[#08080b] p-5">
+    <section className="rounded-2xl border border-border bg-surface-1 p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-medium">
-          <ShieldCheck className="size-4 text-[#67e8f9]" /> Where your memory lives
+          <ShieldCheck className="size-4 text-brand-2" /> Where your memory lives
         </div>
         {s && (
-          <span className={cn("rounded-full border px-2.5 py-0.5 text-[11px]", s.next === "done" ? "border-emerald-400/30 text-emerald-300" : "border-white/10 text-muted-foreground")}>
+          <span className={cn("rounded-full border px-2.5 py-0.5 text-[11px]", s.next === "done" ? "border-ok/30 text-ok" : "border-foreground/12 text-muted-foreground")}>
             {s.next === "done" ? "your own Walrus Memory account" : "Engram's shared account"}
           </span>
         )}
@@ -84,8 +84,8 @@ export function StorageCard() {
               const done = i < currentIndex;
               const active = i === currentIndex;
               return (
-                <li key={step.key} className={cn("flex items-center gap-3 rounded-xl border p-3", active ? "border-white/15 bg-white/[0.03]" : "border-white/[0.05]", !active && !done && "opacity-50")}>
-                  <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full", done ? "bg-emerald-400/15 text-emerald-300" : "bg-white/[0.05] text-muted-foreground")}>
+                <li key={step.key} className={cn("flex items-center gap-3 rounded-xl border p-3", active ? "border-white/15 bg-white/[0.03]" : "border-border", !active && !done && "opacity-50")}>
+                  <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-full", done ? "bg-ok/15 text-ok" : "bg-white/[0.05] text-muted-foreground")}>
                     {done ? <CircleCheck className="size-4" /> : <step.icon className="size-4" />}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -93,7 +93,7 @@ export function StorageCard() {
                     <div className="text-xs text-muted-foreground">{step.hint}</div>
                   </div>
                   {active && (
-                    <button type="button" disabled={!!busy} onClick={() => doStep(step.key)} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-white px-4 text-xs font-medium text-black transition hover:bg-white/90 disabled:opacity-60">
+                    <button type="button" disabled={!!busy} onClick={() => doStep(step.key)} className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-white px-4 text-xs font-medium text-black transition hover:bg-brand/85 disabled:opacity-60">
                       {busy === step.key && <Loader2 className="size-3.5 animate-spin" />}
                       {step.key === "switch" ? "Switch" : "Sign"}
                     </button>

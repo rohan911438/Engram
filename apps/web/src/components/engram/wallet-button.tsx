@@ -40,7 +40,7 @@ export function WalletButton({ size = "md", goToApp = true }: { size?: "md" | "l
 
   if (mode === "local") {
     return (
-      <button type="button" onClick={() => navigate("/app")} className={cn(base, "bg-white text-black hover:bg-white/90")}>
+      <button type="button" onClick={() => navigate("/app")} className={cn(base, "bg-brand text-ink hover:bg-brand/85")}>
         Open inspector <ArrowRight className="size-4" />
       </button>
     );
@@ -49,7 +49,7 @@ export function WalletButton({ size = "md", goToApp = true }: { size?: "md" | "l
   if (address) {
     return (
       <div className="relative">
-        <button type="button" onClick={() => setMenu((m) => !m)} className={cn(base, "border border-white/10 bg-white/[0.04] pr-3 pl-2 hover:bg-white/[0.08]")}>
+        <button type="button" onClick={() => setMenu((m) => !m)} className={cn(base, "border border-foreground/12 bg-white/[0.04] pr-3 pl-2 hover:bg-white/[0.08]")}>
           <AddressAvatar address={address} />
           <span className="font-mono text-[13px]">{middle(address, 6, 4)}</span>
           <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -57,7 +57,7 @@ export function WalletButton({ size = "md", goToApp = true }: { size?: "md" | "l
         {menu && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
-            <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-xl border border-white/10 bg-[#0c0c10] p-1 shadow-2xl shadow-black">
+            <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-xl border border-foreground/12 bg-popover p-1 shadow-2xl shadow-black">
               <button type="button" onClick={() => { setMenu(false); navigate("/app"); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-white/5">
                 <ArrowRight className="size-4 text-muted-foreground" /> My agent
               </button>
@@ -74,7 +74,7 @@ export function WalletButton({ size = "md", goToApp = true }: { size?: "md" | "l
   if (connected) {
     return (
       <div className="flex flex-col items-end gap-1">
-        <button type="button" disabled={signingIn} onClick={() => void signIn().then((ok) => ok && goToApp && navigate("/app"))} className={cn(base, "bg-white text-black shadow-[0_0_40px_-10px_rgba(167,139,250,0.7)] hover:bg-white/90 disabled:opacity-70")}>
+        <button type="button" disabled={signingIn} onClick={() => void signIn().then((ok) => ok && goToApp && navigate("/app"))} className={cn(base, "bg-brand text-ink shadow-[0_0_40px_-10px_rgba(212,255,58,0.7)] hover:bg-brand/85 disabled:opacity-70")}>
           {signingIn ? <Loader2 className="size-4 animate-spin" /> : <PenLine className="size-4" />}
           {signingIn ? "Check your wallet…" : "Sign in to your agent"}
         </button>
@@ -91,7 +91,7 @@ export function WalletButton({ size = "md", goToApp = true }: { size?: "md" | "l
         if (o) wantSignIn.current = true;
       }}
       trigger={
-        <button type="button" className={cn(base, "bg-white text-black shadow-[0_0_40px_-10px_rgba(167,139,250,0.7)] hover:bg-white/90")}>
+        <button type="button" className={cn(base, "bg-brand text-ink shadow-[0_0_40px_-10px_rgba(212,255,58,0.7)] hover:bg-brand/85")}>
           <Wallet className="size-4" /> Connect wallet
         </button>
       }

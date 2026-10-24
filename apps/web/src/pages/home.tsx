@@ -2,16 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { GithubLogo as Github } from "@phosphor-icons/react";
-import { ArrowRight, ArrowUpRight, BellOff, BellRing, Brain, Code2, Eraser, FileCheck2, GitCommitHorizontal, Link2, Lock, Plug, ShieldCheck, Sparkles, SquareTerminal as Terminal2, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUp, ArrowUpRight, BellOff, BellRing, Code2, Eraser, FileCheck2, GitCommitHorizontal, Link2, Lock, Menu, Plug, ShieldCheck, SquareTerminal as Terminal2, X } from "lucide-react";
 import { AgentBentoGrid } from "@/components/ui/agent-bento-grid";
-import { AnimatedRays } from "@/components/ui/animated-rays";
-import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { BlurFade } from "@/components/ui/blur-fade";
-import { BorderBeam } from "@/components/ui/border-beam";
-import { GlowBorderCard } from "@/components/ui/glow-border-card";
-import { LightLines } from "@/components/ui/light-lines";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import { SpotlightNavbar } from "@/components/ui/spotlight-navbar";
 import { Brand } from "@/components/engram/brand";
 import { WalletButton } from "@/components/engram/wallet-button";
 import { server, type Stats } from "@/lib/api";
@@ -22,20 +16,15 @@ const GITHUB = "https://github.com/rohan911438/Engram";
 
 export function HomePage() {
   return (
-    <div className="relative min-h-screen bg-black text-white antialiased selection:bg-[#a78bfa]/30">
+    <div className="relative min-h-screen overflow-x-clip bg-background text-foreground antialiased">
       <Nav />
       <Hero />
-      <Divider />
+      <Marquee />
       <LiveStrip />
-      <Divider />
       <HowItWorks />
-      <Divider />
       <Features />
-      <Divider />
       <Proof />
-      <Divider />
       <Story />
-      <Divider />
       <Developers />
       <FinalCta />
       <Footer />
@@ -43,15 +32,24 @@ export function HomePage() {
   );
 }
 
-const Divider = () => <div className="hairline mx-auto max-w-7xl" />;
-
 /** Serif italic accent inside a headline. */
-const Em = ({ children }: { children: React.ReactNode }) => <span className="text-accent pr-1 font-serif font-normal tracking-normal italic">{children}</span>;
+const Em = ({ children }: { children: React.ReactNode }) => <span className="pr-[0.06em] font-serif font-normal tracking-[-0.02em] text-brand italic">{children}</span>;
+
+const NAV_ITEMS = [
+  { label: "How it works", href: "#how" },
+  { label: "Features", href: "#features" },
+  { label: "Proof", href: "#proof" },
+  { label: "Demo", href: "#story" },
+  { label: "Developers", href: "#developers" },
+];
+
+const go = (href: string) => document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
 
 // ---- nav ---------------------------------------------------------------------
 
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 12);
     on();
@@ -59,29 +57,37 @@ function Nav() {
     return () => window.removeEventListener("scroll", on);
   }, []);
   return (
-    <header className={cn("fixed inset-x-0 top-0 z-50 transition-all duration-500", scrolled ? "bg-black/75 backdrop-blur-2xl" : "bg-transparent")}>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+    <header className={cn("fixed inset-x-0 top-0 z-50 transition-all duration-500", scrolled || open ? "border-b border-border bg-background/80 backdrop-blur-2xl" : "border-b border-transparent")}>
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-6 px-5 sm:px-8">
         <Brand />
-        <div className="hidden md:block">
-          <SpotlightNavbar
-            items={[
-              { label: "How it works", href: "#how" },
-              { label: "Features", href: "#features" },
-              { label: "Proof", href: "#proof" },
-              { label: "Demo", href: "#story" },
-              { label: "Developers", href: "#developers" },
-            ]}
-            onItemClick={(item) => document.querySelector(item.href)?.scrollIntoView({ behavior: "smooth" })}
-          />
-        </div>
+        <nav className="hidden items-center gap-1 md:flex">
+          {NAV_ITEMS.map((it, i) => (
+            <button key={it.href} type="button" onClick={() => go(it.href)} className="group flex items-start gap-1 rounded-full px-3 py-1.5 text-[14px] text-foreground/75 transition hover:text-foreground">
+              {it.label}
+              <sup className="font-mono text-[9px] text-muted-foreground transition group-hover:text-brand">0{i + 1}</sup>
+            </button>
+          ))}
+        </nav>
         <div className="flex items-center gap-2">
-          <a href={GITHUB} target="_blank" rel="noreferrer" className="hidden size-9 items-center justify-center rounded-full text-white/60 transition hover:bg-white/5 hover:text-white sm:flex" aria-label="GitHub">
-            <Github className="size-[18px]" />
+          <a href={GITHUB} target="_blank" rel="noreferrer" className="hidden size-9 items-center justify-center rounded-full border border-border text-foreground/70 transition hover:border-foreground/30 hover:text-foreground sm:flex" aria-label="GitHub">
+            <Github className="size-[17px]" />
           </a>
           <WalletButton />
+          <button type="button" onClick={() => setOpen((o) => !o)} className="flex size-9 items-center justify-center rounded-full border border-border md:hidden" aria-label="menu">
+            {open ? <X className="size-4" /> : <Menu className="size-4" />}
+          </button>
         </div>
       </div>
-      <div className={cn("hairline transition-opacity duration-500", scrolled ? "opacity-100" : "opacity-0")} />
+      {open && (
+        <div className="border-t border-border px-5 pb-5 md:hidden">
+          {NAV_ITEMS.map((it, i) => (
+            <button key={it.href} type="button" onClick={() => { setOpen(false); go(it.href); }} className="flex w-full items-baseline justify-between border-b border-border py-4 text-left font-display text-2xl tracking-tight">
+              {it.label}
+              <span className="font-mono text-[11px] text-muted-foreground">0{i + 1}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </header>
   );
 }
@@ -109,35 +115,34 @@ function Terminal() {
     return () => clearTimeout(t);
   }, [n]);
   return (
-    <div className="card-black relative overflow-hidden shadow-[0_40px_140px_-40px_rgba(124,92,255,0.55)]">
-      <div className="flex items-center gap-2 px-5 py-3.5">
-        <span className="size-2.5 rounded-full bg-white/15" />
-        <span className="size-2.5 rounded-full bg-white/15" />
-        <span className="size-2.5 rounded-full bg-white/15" />
-        <span className="ml-3 font-mono text-[11px] tracking-wide text-white/45">money-ops · verify a decision</span>
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-1 shadow-[0_50px_120px_-40px_rgba(212,255,58,0.25)]">
+      <div className="flex items-center gap-2 border-b border-border px-5 py-3">
+        <span className="size-2.5 rounded-full bg-brand-2" />
+        <span className="size-2.5 rounded-full bg-warn" />
+        <span className="size-2.5 rounded-full bg-brand" />
+        <span className="ml-3 font-mono text-[11px] tracking-wide text-muted-foreground">money-ops — verify a decision</span>
+        <span className="ml-auto rounded-full border border-border px-2 py-0.5 font-mono text-[10px] text-muted-foreground">zsh</span>
       </div>
-      <div className="hairline opacity-60" />
-      <div className="min-h-[286px] space-y-2 p-6 font-mono text-[12.5px] leading-relaxed">
+      <div className="min-h-[290px] space-y-2 p-5 font-mono text-[12.5px] leading-relaxed sm:p-6">
         {VERIFY_LINES.slice(0, n).map((l, i) =>
           l.head ? (
-            <div key={i} className="text-white">{l.text}</div>
+            <div key={i} className="text-foreground">{l.text}</div>
           ) : (
-            <motion.div key={i} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="flex gap-3">
-              <span className="text-emerald-400">✔</span>
-              <span className="w-32 shrink-0 text-white/90">{l.text}</span>
-              <span className="truncate text-white/50">{l.detail}</span>
+            <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }} className="flex gap-3">
+              <span className="text-brand">✔</span>
+              <span className="w-32 shrink-0 text-foreground/90">{l.text}</span>
+              <span className="truncate text-muted-foreground">{l.detail}</span>
             </motion.div>
           ),
         )}
         {n > VERIFY_LINES.length - 1 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-4">
-            <span className="rounded-md bg-emerald-400/15 px-2 py-0.5 font-semibold text-emerald-300">VALID</span>
-            <span className="ml-2 text-white/55">this decision used exactly this memory.</span>
+            <span className="rounded-md bg-brand px-2 py-0.5 font-semibold text-ink">VALID</span>
+            <span className="ml-2 text-muted-foreground">this decision used exactly this memory.</span>
           </motion.div>
         )}
-        {n < VERIFY_LINES.length && <span className="inline-block h-4 w-2 translate-y-0.5 animate-pulse bg-white/70" />}
+        {n < VERIFY_LINES.length && <span className="inline-block h-4 w-2 translate-y-0.5 animate-pulse bg-brand" />}
       </div>
-      <BorderBeam size={140} duration={9} colorFrom="#a78bfa" colorTo="#67e8f9" />
     </div>
   );
 }
@@ -146,57 +151,79 @@ function Hero() {
   const { hasDemo, mode } = useSession();
   return (
     <section className="grain relative isolate overflow-hidden pt-16">
-      {/* light streaks, kept very low so the black stays black */}
-      <div className="absolute inset-0 -z-20 opacity-60">
-        <LightLines gradientFrom="#000000" gradientTo="#000000" lineColor="#8b7cff" lightColor="#d4caff" linesOpacity={0.05} lightsOpacity={0.7} speedMultiplier={0.55} className="h-full w-full" />
-      </div>
-      {/* overhead spotlight */}
-      <div className="pointer-events-none absolute top-[-280px] left-1/2 -z-10 h-[760px] w-[1100px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(124,92,255,0.30),rgba(124,92,255,0.06)_45%,transparent_70%)] blur-2xl" />
-      <div className="pointer-events-none absolute top-[120px] right-[-200px] -z-10 size-[520px] rounded-full bg-[radial-gradient(closest-side,rgba(34,211,238,0.12),transparent)]" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-56 bg-gradient-to-b from-transparent to-black" />
+      {/* blueprint grid + signal glow */}
+      <div className="bg-grid absolute inset-0 -z-20 [mask-image:radial-gradient(ellipse_80%_70%_at_50%_0%,black,transparent)]" />
+      <div className="pointer-events-none absolute -right-40 -bottom-72 -z-10 size-[820px] rounded-full bg-[radial-gradient(closest-side,rgba(212,255,58,0.22),rgba(212,255,58,0.05)_55%,transparent)] blur-2xl" />
+      <div className="pointer-events-none absolute top-40 -left-64 -z-10 size-[560px] rounded-full bg-[radial-gradient(closest-side,rgba(255,122,69,0.12),transparent)] blur-2xl" />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-16 px-6 pt-24 pb-28 lg:min-h-[calc(100svh-4rem)] lg:grid-cols-[1.08fr_1fr] lg:pt-16">
-        <div>
-          <BlurFade delay={0.05}>
-            <a href="#proof" className="group inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] py-1 pr-3 pl-1.5 text-xs backdrop-blur">
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-white">NEW</span>
-              <AnimatedShinyText className="mx-0 text-xs text-white/70">Memory on Walrus · proofs on Sui · verified via Tatum</AnimatedShinyText>
-              <ArrowRight className="size-3 text-white/50 transition group-hover:translate-x-0.5" />
+      <div className="mx-auto max-w-[1400px] px-5 pt-14 pb-20 sm:px-8 lg:pt-20">
+        <BlurFade delay={0.05}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <span className="label">[ Engram ] — memory infrastructure for AI agents</span>
+            <a href="#proof" onClick={(e) => { e.preventDefault(); go("#proof"); }} className="group inline-flex items-center gap-2.5 rounded-full border border-border bg-surface-1/70 py-1 pr-3 pl-1.5 text-xs backdrop-blur transition hover:border-foreground/25">
+              <span className="rounded-full bg-brand px-2 py-0.5 font-mono text-[10px] font-semibold tracking-wide text-ink">LIVE</span>
+              <span className="text-foreground/80">Walrus memory · Sui proofs · Tatum RPC</span>
+              <ArrowRight className="size-3 text-muted-foreground transition group-hover:translate-x-0.5" />
             </a>
-          </BlurFade>
-          <BlurFade delay={0.12}>
-            <h1 className="mt-8 text-[54px] leading-[0.98] font-semibold tracking-[-0.045em] sm:text-7xl lg:text-[88px]">
-              <span className="text-headline">Git for your</span>
-              <br />
-              <span className="text-headline">agent&apos;s </span>
-              <Em>memory.</Em>
-            </h1>
-          </BlurFade>
-          <BlurFade delay={0.22}>
-            <p className="mt-7 max-w-[540px] text-[19px] leading-[1.6] text-white/70">
-              Engram turns what an AI agent sees into beliefs it can explain, version, prove and forget. Connect your Sui wallet and watch an agent learn your money habits — every decision signed and anchored on-chain.
+          </div>
+        </BlurFade>
+
+        <BlurFade delay={0.12}>
+          <h1 className="mt-10 font-display text-[15vw] leading-[0.86] font-semibold tracking-[-0.055em] sm:text-[12vw] xl:text-[172px]">
+            Git for your
+            <br />
+            agent&apos;s <Em>memory.</Em>
+          </h1>
+        </BlurFade>
+
+        <div className="mt-14 grid items-end gap-12 lg:grid-cols-12">
+          <BlurFade delay={0.22} className="lg:col-span-5">
+            <p className="max-w-[520px] text-[19px] leading-[1.6] text-foreground/80">
+              Engram turns what an AI agent sees into beliefs it can <span className="text-foreground">explain, version, prove and forget</span>. Connect your Sui wallet and watch an agent learn your money habits — every decision signed and anchored on-chain.
             </p>
-          </BlurFade>
-          <BlurFade delay={0.32}>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
+            <div className="mt-9 flex flex-wrap items-center gap-3">
               <WalletButton size="lg" />
               {(hasDemo || mode === "local") && (
-                <Link to={mode === "local" ? "/app" : "/demo"} className="group inline-flex h-12 items-center gap-2 rounded-full border border-white/12 bg-white/[0.02] px-6 text-[15px] font-medium text-white/90 backdrop-blur transition hover:border-white/25 hover:bg-white/[0.06]">
-                  <Sparkles className="size-4 text-[#b9a7ff]" /> Explore the demo agent
-                  <ArrowRight className="size-4 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-white/80" />
+                <Link to={mode === "local" ? "/app" : "/demo"} className="group inline-flex h-12 items-center gap-2 rounded-full border border-foreground/15 px-6 text-[15px] font-medium text-foreground transition hover:border-foreground/40 hover:bg-foreground/[0.04]">
+                  Explore the demo agent
+                  <ArrowUpRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-brand" />
                 </Link>
               )}
             </div>
-            <p className="mt-5 flex items-center gap-2 text-[13px] text-white/50">
+            <p className="mt-5 flex items-center gap-2 text-[13px] text-muted-foreground">
               <Lock className="size-3.5" /> One free signature to sign in. No transaction, no gas, no funds moved.
             </p>
           </BlurFade>
+          <BlurFade delay={0.35} className="lg:col-span-7">
+            <Terminal />
+          </BlurFade>
         </div>
-        <BlurFade delay={0.4} className="relative">
-          <Terminal />
-        </BlurFade>
+
+        <button type="button" onClick={() => go("#how")} className="mt-16 hidden items-center gap-3 text-muted-foreground transition hover:text-foreground lg:flex">
+          <span className="flex size-10 items-center justify-center rounded-full border border-border"><ArrowDownRight className="size-4" /></span>
+          <span className="label">Scroll — see how it works</span>
+        </button>
       </div>
     </section>
+  );
+}
+
+// ---- marquee band -----------------------------------------------------------------
+
+const BAND = ["Observe", "Sleep", "Commit", "Prove", "Forget", "Walrus Memory", "Sui anchors", "Tatum RPC", "Signed receipts", "Merkle proofs"];
+
+function Marquee() {
+  return (
+    <div className="relative overflow-hidden border-y border-ink bg-brand py-4 text-ink">
+      <div className="flex w-max animate-marquee items-center">
+        {[...BAND, ...BAND].map((w, i) => (
+          <span key={i} className="flex items-center font-display text-[30px] leading-none font-semibold tracking-[-0.03em] uppercase sm:text-[38px]">
+            <span className="px-7">{w}</span>
+            <span aria-hidden className="text-[22px]">✦</span>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -220,20 +247,21 @@ function LiveStrip() {
     { label: "Decisions", value: s?.receipts ?? 0 },
   ];
   return (
-    <section className="bg-black">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 divide-white/[0.06] px-6 sm:grid-cols-3 lg:grid-cols-6 lg:divide-x">
+    <section className="border-b border-border">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {items.map((it) => (
-          <div key={it.label} className="px-6 py-10 first:pl-0">
-            <div className="text-[40px] leading-none font-medium tracking-[-0.03em] tabular-nums text-white">{s ? <NumberTicker value={it.value} className="text-white" /> : "—"}</div>
-            <div className="mt-3 text-[11px] font-medium tracking-[0.18em] text-white/45 uppercase">{it.label}</div>
+          <div key={it.label} className="border-r border-b border-border px-5 py-10 sm:px-8 lg:border-b-0">
+            <div className="label">{it.label}</div>
+            <div className="mt-4 font-display text-[52px] leading-none font-medium tracking-[-0.04em] tabular-nums">{s ? <NumberTicker value={it.value} className="text-foreground" /> : "—"}</div>
           </div>
         ))}
-        <div className="col-span-2 px-6 py-10 sm:col-span-1">
-          <div className="flex items-center gap-2 font-mono text-[22px] leading-none tabular-nums text-white">
-            <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" /><span className="relative inline-flex size-2 rounded-full bg-emerald-400" /></span>
-            {s?.suiCheckpoint ? Number(s.suiCheckpoint).toLocaleString("en-US") : "—"}
+        <div className="col-span-2 px-5 py-10 sm:col-span-1 sm:px-8">
+          <div className="label flex items-center gap-2">
+            <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-70" /><span className="relative inline-flex size-2 rounded-full bg-brand" /></span>
+            Sui checkpoint
           </div>
-          <div className="mt-3 text-[11px] font-medium tracking-[0.18em] text-white/45 uppercase">Sui checkpoint · live</div>
+          <div className="mt-5 font-mono text-[22px] leading-none tabular-nums">{s?.suiCheckpoint ? Number(s.suiCheckpoint).toLocaleString("en-US") : "—"}</div>
+          <div className="mt-2 text-[12px] text-muted-foreground">live, via Tatum</div>
         </div>
       </div>
     </section>
@@ -242,55 +270,62 @@ function LiveStrip() {
 
 // ---- section heading ----------------------------------------------------------------
 
-function SectionHead({ eyebrow, title, text, align = "center" }: { eyebrow: string; title: React.ReactNode; text: string; align?: "center" | "left" }) {
+function SectionHead({ index, eyebrow, title, text }: { index: string; eyebrow: string; title: React.ReactNode; text: string }) {
   return (
-    <BlurFade inView className={cn(align === "center" && "mx-auto max-w-3xl text-center")}>
-      <div className={cn("inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.22em] text-[#b9a7ff] uppercase", align === "center" && "justify-center")}>
-        <span className="h-px w-6 bg-gradient-to-r from-transparent to-[#b9a7ff]/70" />
-        {eyebrow}
-        <span className="h-px w-6 bg-gradient-to-l from-transparent to-[#b9a7ff]/70" />
+    <BlurFade inView className="grid gap-6 lg:grid-cols-12">
+      <div className="lg:col-span-3">
+        <div className="label flex items-center gap-3">
+          <span className="text-brand">[{index}]</span> {eyebrow}
+        </div>
       </div>
-      <h2 className="mt-5 text-[40px] leading-[1.04] font-semibold tracking-[-0.04em] sm:text-[56px]">{title}</h2>
-      <p className={cn("mt-6 text-[18px] leading-[1.65] text-white/65", align === "center" && "mx-auto max-w-2xl")}>{text}</p>
+      <div className="lg:col-span-9">
+        <h2 className="font-display text-[44px] leading-[0.95] font-semibold tracking-[-0.045em] sm:text-[64px] lg:text-[80px]">{title}</h2>
+        <p className="mt-7 max-w-2xl text-[18px] leading-[1.65] text-foreground/70">{text}</p>
+      </div>
     </BlurFade>
   );
 }
 
+const Section = ({ id, className, children }: { id?: string; className?: string; children: React.ReactNode }) => (
+  <section id={id} className={cn("relative scroll-mt-16 border-b border-border", className)}>
+    <div className="mx-auto max-w-[1400px] px-5 py-28 sm:px-8 lg:py-36">{children}</div>
+  </section>
+);
+
 // ---- how it works ------------------------------------------------------------------
 
 const STEPS = [
-  { icon: Wallet, title: "Observe", text: "Every wallet event and every word you tell it becomes an episode — encrypted with its own key, stored on Walrus Memory.", tag: "AES-256-GCM · Walrus" },
-  { icon: Brain, title: "Sleep", text: "The agent consolidates episodes into beliefs with confidence and evidence, and revises them when you correct it.", tag: "LLM · grounded in episodes" },
-  { icon: GitCommitHorizontal, title: "Commit", text: "Beliefs become a Merkle root, signed by the agent and anchored on Sui. History you can diff, blame and bisect.", tag: "Ed25519 · Merkle · Sui" },
-  { icon: ShieldCheck, title: "Prove", text: "Each decision carries a signed receipt naming the exact beliefs it used. Anyone can verify it end to end.", tag: "Receipts · Sui via Tatum" },
+  { title: "Observe", text: "Every wallet event and every word you tell it becomes an episode — encrypted with its own key, stored on Walrus Memory.", tag: "AES-256-GCM · Walrus" },
+  { title: "Sleep", text: "The agent consolidates episodes into beliefs with confidence and evidence, and revises them when you correct it.", tag: "LLM · grounded in episodes" },
+  { title: "Commit", text: "Beliefs become a Merkle root, signed by the agent and anchored on Sui. History you can diff, blame and bisect.", tag: "Ed25519 · Merkle · Sui" },
+  { title: "Prove", text: "Each decision carries a signed receipt naming the exact beliefs it used. Anyone can verify it end to end.", tag: "Receipts · Sui via Tatum" },
 ];
 
 function HowItWorks() {
   return (
-    <section id="how" className="relative mx-auto max-w-7xl scroll-mt-16 px-6 py-32">
+    <Section id="how">
       <SectionHead
+        index="01"
         eyebrow="How it works"
-        title={<><span className="text-headline">A memory that learns —</span><br /><Em>and can prove what it knew.</Em></>}
+        title={<>A memory that learns — <Em>and can prove</Em> what it knew.</>}
         text="Four steps turn a black-box agent into one you can audit. They run on real data: your wallet, your words, live chain state."
       />
-      <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <ol className="mt-20 border-b border-border">
         {STEPS.map((s, i) => (
-          <BlurFade key={s.title} delay={0.08 * i} inView className="h-full">
-            <GlowBorderCard width="100%" aspectRatio="auto" height="100%" colorPreset="custom" gradientColors={["#3b2bb8", "#7c5cff", "#b9a7ff", "#67e8f9", "#22d3ee", "#7c5cff", "#3b2bb8"]} borderRadius="1.25rem" animationDuration={7 + i} borderWidth="0.6em" blurAmount="0.6em" inset="-0.4em" className="h-full bg-transparent dark:bg-transparent" contentClassName="p-px items-stretch">
-              <div className="flex h-full min-h-[272px] w-full flex-col rounded-[calc(1.25rem-1px)] bg-black p-7">
-                <div className="flex items-center justify-between">
-                  <span className="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.02]"><s.icon className="size-5 text-[#cfc5ff]" /></span>
-                  <span className="font-serif text-2xl text-white/25 italic">0{i + 1}</span>
-                </div>
-                <h3 className="mt-7 text-[22px] font-semibold tracking-[-0.02em] text-white">{s.title}</h3>
-                <p className="mt-2.5 text-[15px] leading-[1.6] text-white/65">{s.text}</p>
-                <div className="mt-auto pt-6 font-mono text-[11px] tracking-wide text-[#b9a7ff]">{s.tag}</div>
+          <BlurFade key={s.title} delay={0.06 * i} inView>
+            <li className="group grid cursor-default items-baseline gap-4 border-t border-border py-8 transition-colors duration-300 hover:bg-foreground/[0.02] sm:grid-cols-12 sm:gap-6 sm:py-10">
+              <span className="font-mono text-[13px] text-muted-foreground transition group-hover:text-brand sm:col-span-1">0{i + 1}</span>
+              <h3 className="font-display text-[44px] leading-none font-semibold tracking-[-0.045em] transition-colors duration-300 group-hover:text-brand sm:col-span-4 sm:text-[60px]">{s.title}</h3>
+              <p className="max-w-md text-[16px] leading-[1.6] text-foreground/70 sm:col-span-5">{s.text}</p>
+              <div className="flex items-center justify-between gap-3 sm:col-span-2 sm:flex-col sm:items-end">
+                <span className="font-mono text-[11px] tracking-wide text-muted-foreground">{s.tag}</span>
+                <ArrowUpRight className="size-6 text-muted-foreground transition duration-300 group-hover:rotate-45 group-hover:text-brand" />
               </div>
-            </GlowBorderCard>
+            </li>
           </BlurFade>
         ))}
-      </div>
-    </section>
+      </ol>
+    </Section>
   );
 }
 
@@ -298,19 +333,17 @@ function HowItWorks() {
 
 function Features() {
   return (
-    <section id="features" className="relative scroll-mt-16 overflow-hidden bg-black py-32">
-      <div className="pointer-events-none absolute top-0 left-1/2 h-[520px] w-[900px] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(103,232,249,0.10),transparent_65%)]" />
-      <div className="relative mx-auto max-w-7xl px-6">
-        <SectionHead
-          eyebrow="Features"
-          title={<><span className="text-headline">Everything Git gave code,</span><br /><Em>now for an agent&apos;s mind.</Em></>}
-          text="log · diff · checkout · blame · bisect · verify · forget — as an SDK, a CLI, and this app."
-        />
-        <BlurFade inView className="mt-16">
-          <AgentBentoGrid className="max-w-none gap-3" />
-        </BlurFade>
-      </div>
-    </section>
+    <Section id="features">
+      <SectionHead
+        index="02"
+        eyebrow="Features"
+        title={<>Everything Git gave code, <Em>now for an agent&apos;s mind.</Em></>}
+        text="log · diff · checkout · blame · bisect · verify · forget — as an SDK, a CLI, and this app."
+      />
+      <BlurFade inView className="mt-20">
+        <AgentBentoGrid className="max-w-none gap-3" />
+      </BlurFade>
+    </Section>
   );
 }
 
@@ -326,43 +359,80 @@ const CHAIN = [
 
 function Proof() {
   return (
-    <section id="proof" className="relative mx-auto grid max-w-7xl scroll-mt-16 items-center gap-16 px-6 py-32 lg:grid-cols-2">
-      <div>
-        <SectionHead
-          align="left"
-          eyebrow="Proof"
-          title={<><span className="text-headline">Don&apos;t trust the agent.</span><br /><Em>Verify it.</Em></>}
-          text="When an agent moves money or raises an alarm, Engram shows exactly which memory it acted on — and that nobody changed that memory afterwards."
-        />
-        <BlurFade inView delay={0.1} className="mt-9 grid grid-cols-2 gap-3 text-[14px]">
-          {[
-            { icon: FileCheck2, t: "Signed receipts" },
-            { icon: GitCommitHorizontal, t: "Hash-linked commits" },
-            { icon: ShieldCheck, t: "Anchored on Sui" },
-            { icon: Eraser, t: "Provable forgetting" },
-          ].map((p) => (
-            <div key={p.t} className="card-black flex items-center gap-2.5 px-4 py-3 text-white/85">
-              <p.icon className="size-4 text-[#b9a7ff]" /> {p.t}
+    <Section id="proof">
+      <div className="grid items-start gap-16 lg:grid-cols-12">
+        <div className="lg:col-span-6">
+          <BlurFade inView>
+            <div className="label flex items-center gap-3"><span className="text-brand">[03]</span> Proof</div>
+            <h2 className="mt-6 font-display text-[44px] leading-[0.95] font-semibold tracking-[-0.045em] sm:text-[64px] lg:text-[80px]">
+              Don&apos;t trust the agent. <Em>Verify it.</Em>
+            </h2>
+            <p className="mt-7 max-w-xl text-[18px] leading-[1.65] text-foreground/70">
+              When an agent moves money or raises an alarm, Engram shows exactly which memory it acted on — and that nobody changed that memory afterwards.
+            </p>
+          </BlurFade>
+          <BlurFade inView delay={0.1} className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border text-[14px]">
+            {[
+              { icon: FileCheck2, t: "Signed receipts" },
+              { icon: GitCommitHorizontal, t: "Hash-linked commits" },
+              { icon: ShieldCheck, t: "Anchored on Sui" },
+              { icon: Eraser, t: "Provable forgetting" },
+            ].map((p) => (
+              <div key={p.t} className="flex items-center gap-3 bg-background px-5 py-5 text-foreground/90 transition hover:bg-surface-2">
+                <p.icon className="size-[18px] text-brand" /> {p.t}
+              </div>
+            ))}
+          </BlurFade>
+        </div>
+
+        {/* A paper receipt: the proof chain, printed. */}
+        <BlurFade inView delay={0.15} className="lg:col-span-6">
+          <div className="relative mx-auto max-w-[520px] rotate-[1.2deg] rounded-[6px] bg-bone px-7 pt-8 pb-10 font-mono text-ink shadow-[0_60px_120px_-40px_rgba(212,255,58,0.35)] transition duration-500 hover:rotate-0">
+            <div className="flex items-start justify-between text-[11px] tracking-[0.14em] uppercase">
+              <div>
+                <div className="font-display text-[26px] font-bold tracking-[-0.04em] normal-case">engram</div>
+                <div className="mt-1 opacity-60">proof of decision</div>
+              </div>
+              <div className="text-right opacity-60">
+                <div>r_5080ccb4</div>
+                <div>checkpoint 397,926,925</div>
+              </div>
             </div>
-          ))}
+            <div className="my-5 border-t-2 border-dashed border-ink/25" />
+            <ol className="space-y-4">
+              {CHAIN.map((c, i) => (
+                <li key={c.k} className="flex gap-4">
+                  <span className="text-[11px] opacity-50">0{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-3 text-[13px] font-semibold tracking-wide uppercase">
+                      {c.k}
+                      <span className="flex-1 translate-y-[-3px] border-b border-dotted border-ink/30" />
+                      <span className="rounded-sm bg-ink px-1.5 py-0.5 text-[10px] text-brand">OK</span>
+                    </div>
+                    <div className="mt-1 font-sans text-[13px] leading-snug opacity-70">{c.v}</div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="my-5 border-t-2 border-dashed border-ink/25" />
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-[11px] tracking-[0.14em] uppercase opacity-60">verdict</div>
+                <div className="font-display text-[40px] leading-none font-bold tracking-[-0.04em]">VALID</div>
+              </div>
+              {/* barcode */}
+              <div className="flex h-12 items-end gap-[2px]" aria-hidden>
+                {Array.from({ length: 34 }, (_, i) => (
+                  <span key={i} className="bg-ink" style={{ width: (i * 7) % 3 === 0 ? 3 : 1, height: "100%" }} />
+                ))}
+              </div>
+            </div>
+            {/* torn edge */}
+            <div className="absolute inset-x-0 -bottom-[9px] h-[10px] bg-[linear-gradient(135deg,var(--color-bone)_50%,transparent_50%),linear-gradient(225deg,var(--color-bone)_50%,transparent_50%)] bg-[length:14px_14px]" />
+          </div>
         </BlurFade>
       </div>
-      <ol className="relative space-y-3">
-        <div className="absolute top-8 bottom-8 left-[27px] w-px bg-gradient-to-b from-[#a78bfa]/70 via-[#67e8f9]/50 to-emerald-400/70" />
-        {CHAIN.map((c, i) => (
-          <BlurFade key={c.k} delay={0.07 * i} inView>
-            <li className="card-black group flex items-center gap-4 p-4 transition duration-300 hover:-translate-y-0.5">
-              <span className="z-10 flex size-[38px] shrink-0 items-center justify-center rounded-full border border-white/15 bg-black font-serif text-lg text-[#cfc5ff] italic">{i + 1}</span>
-              <div>
-                <div className="font-medium text-white">{c.k}</div>
-                <div className="mt-0.5 text-[14px] text-white/60">{c.v}</div>
-              </div>
-              <span className="ml-auto flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-xs text-emerald-300">✔</span>
-            </li>
-          </BlurFade>
-        ))}
-      </ol>
-    </section>
+    </Section>
   );
 }
 
@@ -378,50 +448,54 @@ const PHASES = [
 function Story() {
   const { hasDemo, mode } = useSession();
   return (
-    <section id="story" className="relative scroll-mt-16 overflow-hidden bg-black py-32">
-      <div className="pointer-events-none absolute bottom-0 left-1/2 h-[420px] w-[1000px] -translate-x-1/2 bg-[radial-gradient(ellipse_at_bottom,rgba(124,92,255,0.12),transparent_65%)]" />
-      <div className="relative mx-auto max-w-7xl px-6">
-        <SectionHead
-          eyebrow="The money-ops agent"
-          title={<><span className="text-headline">Same agent, same code.</span><br /><Em>Only its memory changed.</Em></>}
-          text="A wallet watcher with Engram memory, run on real Sui transfers between five wallets. Watch how many it alerts on as it learns its owner."
-        />
-        <div className="mt-16 grid gap-4 md:grid-cols-4">
-          {PHASES.map((p, i) => (
-            <BlurFade key={p.label} delay={0.08 * i} inView className="h-full">
-              <div className="card-black h-full p-6">
-                <div className="font-serif text-[22px] text-white/90 italic">{p.label}</div>
-                <div className="mt-5 flex h-16 items-end gap-1.5">
-                  {Array.from({ length: p.total }, (_, j) => (
-                    <motion.span
-                      key={j}
-                      initial={{ height: 0 }}
-                      whileInView={{ height: j < p.alerts ? 60 : 22 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.15 + j * 0.06, type: "spring", stiffness: 140, damping: 16 }}
-                      className={cn("w-3 rounded-full", j < p.alerts ? "bg-gradient-to-t from-amber-500/50 to-amber-300" : "bg-gradient-to-t from-emerald-500/30 to-emerald-300/90")}
-                    />
-                  ))}
-                </div>
-                <div className="mt-5 flex items-baseline gap-2">
-                  {p.alerts > 0 ? <BellRing className="size-4 self-center text-amber-300" /> : <BellOff className="size-4 self-center text-emerald-300" />}
-                  <span className="text-[34px] leading-none font-medium tracking-[-0.03em] tabular-nums text-white">{p.alerts}/{p.total}</span>
-                  <span className="text-[13px] text-white/50">alerted</span>
-                </div>
-                <p className="mt-3 text-[14px] leading-[1.6] text-white/60">{p.note}</p>
+    <Section id="story">
+      <SectionHead
+        index="04"
+        eyebrow="The money-ops agent"
+        title={<>Same agent, same code. <Em>Only its memory changed.</Em></>}
+        text="A wallet watcher with Engram memory, run on real Sui transfers between five wallets. Watch how many it alerts on as it learns its owner."
+      />
+      <div className="mt-20 grid overflow-hidden rounded-2xl border border-border md:grid-cols-4">
+        {PHASES.map((p, i) => (
+          <BlurFade key={p.label} delay={0.08 * i} inView className="h-full">
+            <div className="flex h-full flex-col border-b border-border p-7 transition hover:bg-surface-1 md:border-r md:border-b-0">
+              <div className="flex items-center justify-between">
+                <span className="label">{p.label}</span>
+                {p.alerts > 0 ? <BellRing className="size-4 text-brand-2" /> : <BellOff className="size-4 text-brand" />}
               </div>
-            </BlurFade>
-          ))}
+              <div className="mt-8 flex h-20 items-end gap-1.5">
+                {Array.from({ length: p.total }, (_, j) => (
+                  <motion.span
+                    key={j}
+                    initial={{ height: 0 }}
+                    whileInView={{ height: j < p.alerts ? 76 : 26 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.15 + j * 0.06, type: "spring", stiffness: 140, damping: 16 }}
+                    className={cn("w-3.5 rounded-[3px]", j < p.alerts ? "bg-brand-2" : "bg-brand")}
+                  />
+                ))}
+              </div>
+              <div className="mt-7 flex items-baseline gap-2">
+                <span className="font-display text-[52px] leading-none font-semibold tracking-[-0.05em] tabular-nums">{p.alerts}/{p.total}</span>
+                <span className="text-[13px] text-muted-foreground">alerted</span>
+              </div>
+              <p className="mt-4 text-[14px] leading-[1.6] text-foreground/65">{p.note}</p>
+            </div>
+          </BlurFade>
+        ))}
+      </div>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 text-[13px] text-muted-foreground">
+        <div className="flex items-center gap-5">
+          <span className="flex items-center gap-2"><span className="size-2.5 rounded-[2px] bg-brand-2" /> alert raised</span>
+          <span className="flex items-center gap-2"><span className="size-2.5 rounded-[2px] bg-brand" /> stayed quiet</span>
         </div>
         {(hasDemo || mode === "local") && (
-          <div className="mt-12 flex justify-center">
-            <Link to={mode === "local" ? "/app" : "/demo"} className="group inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-2.5 text-[14px] text-white/80 transition hover:border-white/25 hover:text-white">
-              Open this agent&apos;s real memory <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </Link>
-          </div>
+          <Link to={mode === "local" ? "/app" : "/demo"} className="group inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-[14px] text-foreground transition hover:border-brand hover:text-brand">
+            Open this agent&apos;s real memory <ArrowUpRight className="size-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </Link>
         )}
       </div>
-    </section>
+    </Section>
   );
 }
 
@@ -460,43 +534,47 @@ await agent(tx);   // agent.lastReceipt → r_…`,
 
 function Developers() {
   const origin = typeof location === "undefined" ? "https://engram.app" : location.origin;
+  const [tab, setTab] = useState(0);
+  const c = DEV_CARDS[tab]!;
   return (
-    <section id="developers" className="relative mx-auto max-w-7xl scroll-mt-16 px-6 py-32">
+    <Section id="developers">
       <SectionHead
+        index="05"
         eyebrow="For developers"
-        title={<><span className="text-headline">Bring your own agent.</span><br /><Em>Keep its memory honest.</Em></>}
+        title={<>Bring your own agent. <Em>Keep its memory honest.</Em></>}
         text="The same engine as this app, as a CLI, a TypeScript SDK and an MCP server. Link any of them to your dashboard with your wallet."
       />
-      <div className="mt-16 grid gap-5 lg:grid-cols-3">
-        {DEV_CARDS.map((c, i) => (
-          <BlurFade key={c.title} delay={0.08 * i} inView className="h-full">
-            <div className="card-black flex h-full flex-col p-6">
-              <div className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.02]"><c.icon className="size-[18px] text-[#cfc5ff]" /></span>
-                <h3 className="text-[19px] font-semibold tracking-[-0.02em]">{c.title}</h3>
+      <BlurFade inView className="mt-20 grid overflow-hidden rounded-2xl border border-border lg:grid-cols-12">
+        <div className="border-b border-border lg:col-span-4 lg:border-r lg:border-b-0">
+          {DEV_CARDS.map((d, i) => (
+            <button key={d.title} type="button" onClick={() => setTab(i)} className={cn("group flex w-full items-start gap-4 border-b border-border p-6 text-left transition last:border-b-0", tab === i ? "bg-surface-2" : "hover:bg-surface-1")}>
+              <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border transition", tab === i ? "border-brand bg-brand text-ink" : "border-border text-foreground/70")}><d.icon className="size-[18px]" /></span>
+              <div>
+                <div className="font-display text-[22px] font-semibold tracking-[-0.03em]">{d.title}</div>
+                <div className="mt-1 text-[14px] leading-[1.55] text-foreground/65">{d.text}</div>
               </div>
-              <p className="mt-3 text-[14.5px] leading-[1.6] text-white/60">{c.text}</p>
-              <pre className="mt-5 flex-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-black/70 p-4 font-mono text-[12px] leading-relaxed text-white/80">{c.code}</pre>
-            </div>
-          </BlurFade>
-        ))}
-      </div>
-      <BlurFade delay={0.25} inView>
-        <div className="mt-6 flex flex-col items-start gap-4 rounded-2xl border border-[#67e8f9]/15 bg-[#67e8f9]/[0.04] p-6 sm:flex-row sm:items-center">
-          <Link2 className="size-5 shrink-0 text-[#67e8f9]" />
-          <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-medium">Link a CLI or SDK agent to your dashboard</div>
-            <div className="mt-1 text-[13.5px] text-white/55">Approve with your Sui wallet. Every commit syncs; the server re-verifies signatures, Merkle roots and Sui anchors before showing it. Raw memories and keys never leave your machine.</div>
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-col bg-surface-1 lg:col-span-8">
+          <div className="flex items-center justify-between border-b border-border px-6 py-3">
+            <span className="label">{c.title === "MCP" ? "mcp.json" : c.title === "SDK" ? "agent.ts" : "terminal"}</span>
+            <span className="flex gap-1.5"><span className="size-2 rounded-full bg-foreground/15" /><span className="size-2 rounded-full bg-foreground/15" /><span className="size-2 rounded-full bg-foreground/15" /></span>
           </div>
-          <code className="max-w-full overflow-x-auto rounded-lg bg-black/70 px-3 py-2 font-mono text-[12px] whitespace-nowrap text-white/85">npx @rohankumar4179/engram link --server {origin}</code>
+          <motion.pre key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="min-h-[220px] flex-1 overflow-x-auto p-6 font-mono text-[13px] leading-[1.8] text-foreground/85">{c.code}</motion.pre>
         </div>
       </BlurFade>
-      <div className="mt-8 flex flex-wrap justify-center gap-3 text-[13px]">
-        <a href="https://www.npmjs.com/package/@rohankumar4179/engram" target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-white/70 transition hover:border-white/25 hover:text-white">CLI on npm ↗</a>
-        <a href="https://www.npmjs.com/package/@rohankumar4179/engram-sdk" target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-white/70 transition hover:border-white/25 hover:text-white">SDK on npm ↗</a>
-        <a href={GITHUB} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 px-4 py-2 text-white/70 transition hover:border-white/25 hover:text-white">Docs on GitHub ↗</a>
-      </div>
-    </section>
+      <BlurFade delay={0.15} inView>
+        <div className="mt-4 flex flex-col items-start gap-4 rounded-2xl border border-brand/25 bg-brand/[0.05] p-6 sm:flex-row sm:items-center">
+          <Link2 className="size-5 shrink-0 text-brand" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-medium">Link a CLI or SDK agent to your dashboard</div>
+            <div className="mt-1 text-[13.5px] text-foreground/60">Approve with your Sui wallet. Every commit syncs; the server re-verifies signatures, Merkle roots and Sui anchors before showing it. Raw memories and keys never leave your machine.</div>
+          </div>
+          <code className="max-w-full overflow-x-auto rounded-lg border border-border bg-background px-3 py-2 font-mono text-[12px] whitespace-nowrap text-foreground/85">npx @rohankumar4179/engram link --server {origin}</code>
+        </div>
+      </BlurFade>
+    </Section>
   );
 }
 
@@ -504,38 +582,73 @@ function Developers() {
 
 function FinalCta() {
   return (
-    <section className="relative overflow-hidden bg-black">
-      <AnimatedRays className="min-h-[560px] bg-black">
-        <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center px-6 py-36 text-center">
-          <h2 className="text-[44px] leading-[1.02] font-semibold tracking-[-0.045em] sm:text-[64px]">
-            <span className="text-headline">Give your agent a memory</span>
-            <br />
-            <Em>it can prove.</Em>
-          </h2>
-          <p className="mt-6 max-w-xl text-[18px] leading-[1.6] text-white/65">Connect a Sui wallet. Your agent reads your real transactions through Tatum, learns from what you tell it, and commits every belief to Walrus and Sui.</p>
-          <div className="mt-10">
-            <WalletButton size="lg" />
-          </div>
+    <section className="grain relative isolate overflow-hidden border-b border-border">
+      <div className="bg-dots absolute inset-0 -z-20 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
+      <div className="pointer-events-none absolute -bottom-96 left-1/2 -z-10 h-[700px] w-[1200px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(212,255,58,0.28),transparent)] blur-2xl" />
+      <div className="mx-auto flex max-w-[1400px] flex-col items-center px-5 py-36 text-center sm:px-8 lg:py-48">
+        <span className="label">[06] Start</span>
+        <h2 className="mt-8 font-display text-[52px] leading-[0.92] font-semibold tracking-[-0.055em] sm:text-[88px] lg:text-[120px]">
+          Give your agent
+          <br />a memory <Em>it can prove.</Em>
+        </h2>
+        <p className="mt-8 max-w-xl text-[18px] leading-[1.6] text-foreground/70">Connect a Sui wallet. Your agent reads your real transactions through Tatum, learns from what you tell it, and commits every belief to Walrus and Sui.</p>
+        <div className="mt-11">
+          <WalletButton size="lg" />
         </div>
-      </AnimatedRays>
+      </div>
     </section>
   );
 }
 
+const FOOTER_COLS: { title: string; links: { label: string; href: string; scroll?: boolean }[] }[] = [
+  { title: "Product", links: [{ label: "How it works", href: "#how", scroll: true }, { label: "Features", href: "#features", scroll: true }, { label: "Proof", href: "#proof", scroll: true }, { label: "Demo agent", href: "#story", scroll: true }] },
+  { title: "Developers", links: [{ label: "CLI on npm", href: "https://www.npmjs.com/package/@rohankumar4179/engram" }, { label: "SDK on npm", href: "https://www.npmjs.com/package/@rohankumar4179/engram-sdk" }, { label: "Docs on GitHub", href: GITHUB }] },
+  { title: "Built on", links: [{ label: "Walrus Memory", href: "https://docs.wal.app/walrus-memory/getting-started/what-is-walrus-memory.md" }, { label: "Tatum", href: "https://tatum.io" }, { label: "Sui", href: "https://sui.io" }] },
+];
+
 function Footer() {
   return (
-    <footer className="bg-black">
-      <div className="hairline" />
-      <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 py-12 sm:flex-row sm:items-center">
-        <div>
-          <Brand />
-          <p className="mt-3 text-[13px] text-white/45">Built for the Tatum × Walrus Total Recall hackathon · MIT licensed</p>
+    <footer className="relative overflow-hidden">
+      <div className="mx-auto max-w-[1400px] px-5 pt-20 sm:px-8">
+        <div className="grid gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <Brand />
+            <p className="mt-5 max-w-sm text-[15px] leading-[1.6] text-foreground/65">Versioned, provable, forgettable memory for AI agents. Memory on Walrus, proofs on Sui, chain reads through Tatum.</p>
+            <a href={GITHUB} target="_blank" rel="noreferrer" className="group mt-7 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-[14px] transition hover:border-brand hover:text-brand">
+              <Github className="size-4" /> Star on GitHub <ArrowUpRight className="size-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </a>
+          </div>
+          {FOOTER_COLS.map((col) => (
+            <div key={col.title} className="lg:col-span-2">
+              <div className="label">{col.title}</div>
+              <ul className="mt-5 space-y-3 text-[15px]">
+                {col.links.map((l) => (
+                  <li key={l.label}>
+                    {l.scroll ? (
+                      <button type="button" onClick={() => go(l.href)} className="text-foreground/75 transition hover:text-brand">{l.label}</button>
+                    ) : (
+                      <a href={l.href} target="_blank" rel="noreferrer" className="text-foreground/75 transition hover:text-brand">{l.label} <span className="text-muted-foreground">↗</span></a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <div className="flex lg:col-span-1 lg:justify-end">
+            <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex size-11 items-center justify-center rounded-full border border-border transition hover:border-brand hover:bg-brand hover:text-ink" aria-label="back to top">
+              <ArrowUp className="size-4" />
+            </button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-x-7 gap-y-2 text-[14px] text-white/55">
-          <a className="transition hover:text-white" href="https://docs.wal.app/walrus-memory/getting-started/what-is-walrus-memory.md" target="_blank" rel="noreferrer">Walrus Memory</a>
-          <a className="transition hover:text-white" href="https://tatum.io" target="_blank" rel="noreferrer">Tatum</a>
-          <a className="transition hover:text-white" href="https://sui.io" target="_blank" rel="noreferrer">Sui</a>
-          <a className="transition hover:text-white" href={GITHUB} target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+      {/* giant wordmark */}
+      <div aria-hidden className="mt-16 overflow-hidden select-none">
+        <div className="text-center font-display text-[27vw] leading-[0.78] font-bold tracking-[-0.07em] text-outline">engram</div>
+      </div>
+      <div className="border-t border-border">
+        <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-5 py-6 text-[12.5px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <span>© 2026 Engram · MIT licensed</span>
+          <span>Built for the Tatum × Walrus Total Recall hackathon</span>
         </div>
       </div>
     </footer>

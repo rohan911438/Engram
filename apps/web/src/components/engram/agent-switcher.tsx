@@ -41,17 +41,17 @@ export function AgentSwitcher() {
         ))}
       </div>
       {(showHow || agents?.linked.length === 0) && (
-        <div className="mt-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-[11px] leading-relaxed text-muted-foreground">
+        <div className="mt-2 rounded-xl border border-border bg-white/[0.02] p-3 text-[11px] leading-relaxed text-muted-foreground">
           Link an agent you run with the CLI or SDK — run this in its folder:
           <button
             type="button"
             onClick={() => navigator.clipboard?.writeText(cmd).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); })}
-            className="mt-2 flex w-full items-start gap-2 rounded-md bg-black/60 p-2 text-left font-mono text-[10.5px] break-all text-foreground/90 hover:bg-black"
+            className="mt-2 flex w-full items-start gap-2 rounded-md bg-background/60 p-2 text-left font-mono text-[10.5px] break-all text-foreground/90 hover:bg-background"
           >
             <span className="flex-1">{cmd}</span>
             <Copy className="mt-0.5 size-3 shrink-0 opacity-60" />
           </button>
-          {copied && <div className="mt-1 text-emerald-300">copied</div>}
+          {copied && <div className="mt-1 text-ok">copied</div>}
         </div>
       )}
     </div>

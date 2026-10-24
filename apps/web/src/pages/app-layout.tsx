@@ -43,16 +43,16 @@ export function AppLayout({ kind }: { kind: "app" | "demo" | "linked" }) {
   const needsSignIn = (source === "me" || linked) && !address;
 
   return (
-    <div className="flex min-h-screen bg-black">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/[0.06] bg-[#050507] px-3 py-5 lg:flex">
+    <div className="flex min-h-screen bg-background">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-surface-1 px-3 py-5 lg:flex">
         <Brand className="px-2" />
-        <div className="mt-6 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+        <div className="mt-6 rounded-xl border border-border bg-white/[0.02] p-3">
           {source === "demo" ? (
-            <div className="flex items-center gap-2 text-sm"><Sparkles className="size-4 text-[#a78bfa]" /> Demo agent <span className="ml-auto rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">read-only</span></div>
+            <div className="flex items-center gap-2 text-sm"><Sparkles className="size-4 text-brand" /> Demo agent <span className="ml-auto rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">read-only</span></div>
           ) : source === "local" ? (
             <div className="text-sm">Local repo <span className="block text-xs text-muted-foreground">served by <code className="font-mono">engram ui</code></span></div>
           ) : linked ? (
-            <div className="flex items-center gap-2 text-sm"><Laptop className="size-4 text-[#67e8f9]" /> Linked agent <span className="ml-auto rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">CLI / SDK</span></div>
+            <div className="flex items-center gap-2 text-sm"><Laptop className="size-4 text-brand-2" /> Linked agent <span className="ml-auto rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">CLI / SDK</span></div>
           ) : address ? (
             <div className="flex items-center gap-2.5">
               <AddressAvatar address={address} className="size-7" />
@@ -66,14 +66,15 @@ export function AppLayout({ kind }: { kind: "app" | "demo" | "linked" }) {
           )}
         </div>
         {address && mode === "hosted" && kind !== "demo" && <AgentSwitcher />}
-        <nav className="mt-6 space-y-0.5">
+        <div className="label mt-7 mb-2 px-3">Navigate</div>
+        <nav className="space-y-0.5">
           {NAV.map((n) => (
             <NavLink
               key={n.label}
               to={n.to ? `${base}/${n.to}` : base}
               end={n.end}
               className={({ isActive }) =>
-                cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/[0.04] hover:text-foreground", isActive && "bg-white/[0.06] text-foreground shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]")
+                cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-white/[0.04] hover:text-foreground", isActive && "bg-brand font-medium text-ink hover:bg-brand hover:text-ink")
               }
             >
               <n.icon className="size-4" />
@@ -83,7 +84,7 @@ export function AppLayout({ kind }: { kind: "app" | "demo" | "linked" }) {
         </nav>
         <div className="mt-auto space-y-3 px-2 text-[11px] leading-relaxed text-muted-foreground">
           {source === "demo" && (
-            <div className="rounded-xl border border-[#a78bfa]/20 bg-[#a78bfa]/[0.06] p-3 text-xs text-foreground/90">
+            <div className="rounded-xl border border-brand/20 bg-brand/[0.06] p-3 text-xs text-foreground/90">
               This is a demo memory. Connect your wallet to run an agent on your own transactions.
               <div className="mt-3"><WalletButton /></div>
             </div>
@@ -93,7 +94,7 @@ export function AppLayout({ kind }: { kind: "app" | "demo" | "linked" }) {
       </aside>
 
       <main className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-black/75 px-6 backdrop-blur-xl lg:px-8">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/75 px-6 backdrop-blur-xl lg:px-8">
           <div className="flex items-center gap-3 lg:hidden"><Brand /></div>
           <nav className="hidden items-center gap-1 text-sm text-muted-foreground lg:flex">
             <Link to="/" className="hover:text-foreground">Home</Link>
@@ -105,9 +106,9 @@ export function AppLayout({ kind }: { kind: "app" | "demo" | "linked" }) {
           <WalletButton goToApp={kind === "demo"} />
         </header>
         <div className="lg:hidden">
-          <div className="flex gap-1 overflow-x-auto border-b border-white/[0.06] px-4 py-2">
+          <div className="flex gap-1 overflow-x-auto border-b border-border px-4 py-2">
             {NAV.map((n) => (
-              <NavLink key={n.label} to={n.to ? `${base}/${n.to}` : base} end={n.end} className={({ isActive }) => cn("rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-muted-foreground", isActive && "bg-white/[0.06] text-foreground")}>
+              <NavLink key={n.label} to={n.to ? `${base}/${n.to}` : base} end={n.end} className={({ isActive }) => cn("rounded-full px-3.5 py-1.5 text-sm whitespace-nowrap text-muted-foreground", isActive && "bg-brand font-medium text-ink")}>
                 {n.label}
               </NavLink>
             ))}
@@ -126,11 +127,11 @@ export function AppLayout({ kind }: { kind: "app" | "demo" | "linked" }) {
 function SignInGate() {
   const { hasDemo } = useSession();
   return (
-    <div className="relative mx-auto mt-10 max-w-xl overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent p-10 text-center">
-      <div className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-[radial-gradient(closest-side,rgba(124,92,255,0.35),transparent)]" />
+    <div className="relative mx-auto mt-10 max-w-xl overflow-hidden rounded-3xl border border-border bg-surface-1 p-10 text-center">
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-[radial-gradient(closest-side,rgba(212,255,58,0.35),transparent)]" />
       <div className="relative">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-black"><Lock className="size-6 text-[#c4b5fd]" /></div>
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight">Sign in with your Sui wallet</h1>
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-foreground/12 bg-background"><Lock className="size-6 text-brand" /></div>
+        <h1 className="mt-6 font-display text-3xl font-semibold tracking-[-0.04em]">Sign in with your Sui wallet</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           Your agent reads your wallet&apos;s transactions and takes your word as the owner&apos;s, so it needs to know the wallet is yours. Signing is free — no transaction, no gas.
         </p>

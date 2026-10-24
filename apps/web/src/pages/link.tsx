@@ -41,16 +41,16 @@ export function LinkPage() {
   };
 
   return (
-    <div className="min-h-svh bg-black px-4 py-6">
+    <div className="min-h-svh bg-background px-4 py-6">
       <div className="mx-auto flex max-w-5xl items-center justify-between">
         <Brand />
         <WalletButton goToApp={false} />
       </div>
-      <div className="relative mx-auto mt-16 max-w-lg overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent p-8 sm:p-10">
-        <div className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-[radial-gradient(closest-side,rgba(103,232,249,0.25),transparent)]" />
+      <div className="relative mx-auto mt-16 max-w-lg overflow-hidden rounded-3xl border border-border bg-surface-1 p-8 sm:p-10">
+        <div className="pointer-events-none absolute inset-x-0 -top-24 h-48 bg-[radial-gradient(closest-side,rgba(255,122,69,0.25),transparent)]" />
         <div className="relative">
-          <div className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-black"><Laptop className="size-5 text-[#67e8f9]" /></div>
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight">Link an agent to your dashboard</h1>
+          <div className="flex size-12 items-center justify-center rounded-2xl border border-foreground/12 bg-background"><Laptop className="size-5 text-brand-2" /></div>
+          <h1 className="mt-5 font-display text-3xl font-semibold tracking-[-0.04em]">Link an agent to your dashboard</h1>
           {!code && <p className="mt-3 text-sm text-destructive">This page needs a code. Run <code className="font-mono">engram link</code> to get one.</p>}
 
           {code && !address && (
@@ -69,21 +69,21 @@ export function LinkPage() {
               {info && (
                 <>
                   <p className="mt-3 text-sm text-muted-foreground">Check that this code matches the one in your terminal:</p>
-                  <div className="mt-3 rounded-xl border border-white/10 bg-black/60 py-3 text-center font-mono text-2xl tracking-[0.3em]">{code}</div>
+                  <div className="mt-3 rounded-xl border border-foreground/12 bg-background/60 py-3 text-center font-mono text-2xl tracking-[0.3em]">{code}</div>
                   <dl className="mt-5 space-y-2 text-sm">
                     <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Agent</dt><dd className="font-medium">{info.label}{info.label !== info.agent && <span className="ml-2 font-mono text-xs text-muted-foreground">{info.agent}</span>}</dd></div>
                     <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Signing key</dt><dd className="font-mono text-xs">{middle(info.agentPubKey, 10, 6)}</dd></div>
                     <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Wallet</dt><dd className="font-mono text-xs">{middle(address, 10, 6)}</dd></div>
                   </dl>
                   <ul className="mt-5 space-y-1.5 text-xs text-muted-foreground">
-                    <li className="flex gap-2"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-300" /> Only its commits, beliefs and signed receipts are shared — never raw memories or keys.</li>
-                    <li className="flex gap-2"><KeyRound className="mt-0.5 size-3.5 shrink-0 text-emerald-300" /> Every sync is verified (signatures, Merkle roots, Sui anchors) before it's shown.</li>
+                    <li className="flex gap-2"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-ok" /> Only its commits, beliefs and signed receipts are shared — never raw memories or keys.</li>
+                    <li className="flex gap-2"><KeyRound className="mt-0.5 size-3.5 shrink-0 text-ok" /> Every sync is verified (signatures, Merkle roots, Sui anchors) before it's shown.</li>
                   </ul>
                   <div className="mt-7 flex gap-3">
-                    <button type="button" disabled={busy} onClick={() => decide(true)} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white text-sm font-medium text-black transition hover:bg-white/90 disabled:opacity-60">
+                    <button type="button" disabled={busy} onClick={() => decide(true)} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white text-sm font-medium text-black transition hover:bg-brand/85 disabled:opacity-60">
                       {busy && <Loader2 className="size-4 animate-spin" />} Approve
                     </button>
-                    <button type="button" disabled={busy} onClick={() => decide(false)} className="h-11 rounded-full border border-white/10 px-5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground disabled:opacity-60">
+                    <button type="button" disabled={busy} onClick={() => decide(false)} className="h-11 rounded-full border border-foreground/12 px-5 text-sm text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground disabled:opacity-60">
                       Decline
                     </button>
                   </div>
@@ -94,8 +94,8 @@ export function LinkPage() {
 
           {done === "approved" && (
             <div className="mt-5 space-y-4">
-              <p className="flex items-center gap-2 text-sm text-emerald-300"><CircleCheck className="size-4" /> Linked. Your terminal will finish on its own.</p>
-              <Link to="/app" className="inline-flex h-10 items-center rounded-full bg-white px-5 text-sm font-medium text-black hover:bg-white/90">Go to your agents</Link>
+              <p className="flex items-center gap-2 text-sm text-ok"><CircleCheck className="size-4" /> Linked. Your terminal will finish on its own.</p>
+              <Link to="/app" className="inline-flex h-10 items-center rounded-full bg-white px-5 text-sm font-medium text-black hover:bg-brand/85">Go to your agents</Link>
             </div>
           )}
           {done === "denied" && <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground"><CircleX className="size-4" /> Declined. Nothing was linked.</p>}

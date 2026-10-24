@@ -44,15 +44,15 @@ export function FeatCard({ title, description, children, className = "" }: FeatC
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "group relative flex flex-col gap-2 overflow-hidden rounded-[20px] p-4",
-        "card-black bg-black", // Engram: pure black with a lit top edge
+        "card-black bg-background", // Engram: pure black with a lit top edge
         "shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04)]",
         "dark:shadow-none transition duration-300 hover:-translate-y-0.5",
         className
       )}
     >
       <div className="z-10 flex flex-col gap-1.5">
-        <h3 className="font-semibold text-white text-[15px] tracking-tight">{title}</h3>
-        <p className="text-white/60 text-[13px] leading-relaxed max-w-[92%]">{description}</p>
+        <h3 className="font-semibold text-foreground text-[15px] tracking-tight">{title}</h3>
+        <p className="text-foreground/60 text-[13px] leading-relaxed max-w-[92%]">{description}</p>
       </div>
       <div className="relative mt-2 flex-1 w-full rounded-[14px] overflow-hidden border border-white/[0.06] bg-white/[0.015]">
         {children}
@@ -102,78 +102,78 @@ const PATHS: FlowPath[] = [
     d: "M 78 120 L 113 120",
     activeSteps: ["request"],
     flowDirection: "forward",
-    colorClass: "text-cyan-500 dark:text-cyan-400",
+    colorClass: "text-orange-500 dark:text-brand-2",
   },
   {
     id: "router-to-agent",
     d: "M 137 120 L 172 120",
     activeSteps: ["agent"],
     flowDirection: "forward",
-    colorClass: "text-violet-500 dark:text-violet-400",
+    colorClass: "text-lime-500 dark:text-lime-400",
   },
   {
     id: "agent-to-memory",
     d: "M 200 92 L 200 50 L 252 50",
     activeSteps: ["memory"],
     flowDirection: "both",
-    colorClass: "text-fuchsia-500 dark:text-fuchsia-400",
+    colorClass: "text-yellow-500 dark:text-yellow-400",
   },
   {
     id: "agent-to-tools",
     d: "M 200 148 L 200 190 L 252 190",
     activeSteps: ["tools"],
     flowDirection: "both",
-    colorClass: "text-emerald-500 dark:text-emerald-400",
+    colorClass: "text-emerald-500 dark:text-ok",
   },
   {
     id: "response-flow-1",
     d: "M 172 120 L 137 120",
     activeSteps: ["response"],
     flowDirection: "forward",
-    colorClass: "text-cyan-500 dark:text-cyan-400",
+    colorClass: "text-orange-500 dark:text-brand-2",
   },
   {
     id: "response-flow-2",
     d: "M 113 120 L 78 120",
     activeSteps: ["response"],
     flowDirection: "forward",
-    colorClass: "text-cyan-500 dark:text-cyan-400",
+    colorClass: "text-orange-500 dark:text-brand-2",
   },
 ];
 
 const NODE_COLORS: Record<string, { bg: string; border: string; text: string; buttonBg: string; buttonBorder: string }> = {
   A: {
-    bg: "bg-cyan-500/10 dark:bg-cyan-500/5",
-    border: "border-cyan-500/60 dark:border-cyan-400/50",
-    text: "text-cyan-600 dark:text-cyan-400",
-    buttonBg: "bg-cyan-500",
-    buttonBorder: "border-cyan-600",
+    bg: "bg-orange-500/10 dark:bg-orange-500/5",
+    border: "border-orange-500/60 dark:border-brand-2/50",
+    text: "text-orange-600 dark:text-brand-2",
+    buttonBg: "bg-orange-500",
+    buttonBorder: "border-orange-600",
   },
   Router: {
     bg: "bg-amber-500/10 dark:bg-amber-500/5",
-    border: "border-amber-500/60 dark:border-amber-400/50",
-    text: "text-amber-600 dark:text-amber-400",
+    border: "border-amber-500/60 dark:border-warn/50",
+    text: "text-amber-600 dark:text-warn",
     buttonBg: "bg-amber-500",
     buttonBorder: "border-amber-600",
   },
   C: {
-    bg: "bg-violet-500/10 dark:bg-violet-500/5",
-    border: "border-violet-500/60 dark:border-violet-400/50",
-    text: "text-violet-600 dark:text-violet-400",
-    buttonBg: "bg-violet-500",
-    buttonBorder: "border-violet-600",
+    bg: "bg-lime-500/10 dark:bg-lime-500/5",
+    border: "border-lime-500/60 dark:border-lime-400/50",
+    text: "text-lime-600 dark:text-lime-400",
+    buttonBg: "bg-lime-500",
+    buttonBorder: "border-lime-600",
   },
   B: {
-    bg: "bg-fuchsia-500/10 dark:bg-fuchsia-500/5",
-    border: "border-fuchsia-500/60 dark:border-fuchsia-400/50",
-    text: "text-fuchsia-600 dark:text-fuchsia-400",
-    buttonBg: "bg-fuchsia-500",
-    buttonBorder: "border-fuchsia-600",
+    bg: "bg-yellow-500/10 dark:bg-yellow-500/5",
+    border: "border-yellow-500/60 dark:border-yellow-400/50",
+    text: "text-yellow-600 dark:text-yellow-400",
+    buttonBg: "bg-yellow-500",
+    buttonBorder: "border-yellow-600",
   },
   D: {
     bg: "bg-emerald-500/10 dark:bg-emerald-500/5",
-    border: "border-emerald-500/60 dark:border-emerald-400/50",
-    text: "text-emerald-600 dark:text-emerald-400",
+    border: "border-emerald-500/60 dark:border-ok/50",
+    text: "text-emerald-600 dark:text-ok",
     buttonBg: "bg-emerald-500",
     buttonBorder: "border-emerald-600",
   },
@@ -290,7 +290,7 @@ export function Card1() {
               <div className="w-full h-full flex items-center justify-center">
                 {isBox && node.icon ? (
                   <div
-                    className={`w-full h-full rounded-[14px] border flex flex-col items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_4px_4px_0_0_rgba(255,255,255,0.06),inset_6px_6px_0_0_rgba(255,255,255,0.04),inset_8px_8px_0_0_rgba(255,255,255,0.02),0_1px_2px_0_rgba(0,0,0,0.08),0_2px_4px_0_rgba(0,0,0,0.06),0_4px_6px_0_rgba(0,0,0,0.04),0_6px_8px_0_rgba(0,0,0,0.02)] text-white ${colorStyles.buttonBg} ${colorStyles.buttonBorder}`}
+                    className={`w-full h-full rounded-[14px] border flex flex-col items-center justify-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_4px_4px_0_0_rgba(255,255,255,0.06),inset_6px_6px_0_0_rgba(255,255,255,0.04),inset_8px_8px_0_0_rgba(255,255,255,0.02),0_1px_2px_0_rgba(0,0,0,0.08),0_2px_4px_0_rgba(0,0,0,0.06),0_4px_6px_0_rgba(0,0,0,0.04),0_6px_8px_0_rgba(0,0,0,0.02)] text-foreground ${colorStyles.buttonBg} ${colorStyles.buttonBorder}`}
                   >
                     {/* Centered Static Icon */}
                     <div className="mb-0.5 flex items-center justify-center">
@@ -482,7 +482,7 @@ export function Card2() {
 const STATUS_ICONS: Record<string, { icon: any; color: string; bg: string; gradient: string; border: string }> = {
   done: { icon: Check, color: "text-lime-500", bg: "bg-lime-500/15", gradient: "bg-gradient-to-b from-lime-400 to-lime-600", border: "border-lime-600" },
   running: { icon: CircleNotch, color: "text-blue-400", bg: "bg-blue-400/15", gradient: "bg-gradient-to-b from-blue-400 to-blue-600", border: "border-blue-600" },
-  waiting: { icon: Clock, color: "text-amber-400", bg: "bg-amber-400/15", gradient: "bg-gradient-to-b from-amber-400 to-amber-600", border: "border-amber-600" },
+  waiting: { icon: Clock, color: "text-warn", bg: "bg-warn/15", gradient: "bg-gradient-to-b from-warn to-amber-600", border: "border-amber-600" },
   idle: { icon: Minus, color: "text-muted-foreground/60", bg: "bg-muted/40", gradient: "bg-gradient-to-b from-zinc-400 to-zinc-600", border: "border-zinc-600" },
 };
 
@@ -552,7 +552,7 @@ export function Card3() {
               }`}>
 
               {/* Icon badge — full on active, compact on behind */}
-              <div className={`shrink-0 rounded-[8px] flex items-center justify-center font-bold text-white transition-all duration-300 ${si.gradient} border ${si.border} shadow-[inset_0_0.5px_0_0_rgba(255,255,255,0.6),inset_0.5px_0_0_0_rgba(255,255,255,0.2),inset_0_2px_6px_0_rgba(255,255,255,0.3),inset_0_-0.5px_0_0_rgba(0,0,0,0.3),inset_-0.5px_0_0_0_rgba(0,0,0,0.1),inset_0_-2px_6px_0_rgba(0,0,0,0.1),0_1px_2px_0_rgba(0,0,0,0.08),0_2px_4px_0_rgba(0,0,0,0.06),0_4px_6px_0_rgba(0,0,0,0.04)] ${isActive ? "w-8 h-8" : "w-5 h-5"
+              <div className={`shrink-0 rounded-[8px] flex items-center justify-center font-bold text-foreground transition-all duration-300 ${si.gradient} border ${si.border} shadow-[inset_0_0.5px_0_0_rgba(255,255,255,0.6),inset_0.5px_0_0_0_rgba(255,255,255,0.2),inset_0_2px_6px_0_rgba(255,255,255,0.3),inset_0_-0.5px_0_0_rgba(0,0,0,0.3),inset_-0.5px_0_0_0_rgba(0,0,0,0.1),inset_0_-2px_6px_0_rgba(0,0,0,0.1),0_1px_2px_0_rgba(0,0,0,0.08),0_2px_4px_0_rgba(0,0,0,0.06),0_4px_6px_0_rgba(0,0,0,0.04)] ${isActive ? "w-8 h-8" : "w-5 h-5"
                 }`}>
                 <si.icon weight="bold" className={`${isActive ? "w-4 h-4" : "w-2.5 h-2.5"} ${l.status === "running" ? "animate-spin" : ""}`} />
               </div>
@@ -612,10 +612,10 @@ const NS_ICONS: Record<string, React.ElementType> = {
 };
 
 const NS_COLORS: Record<string, { bar: string; dot: string; badge: string; buttonBg: string; buttonBorder: string }> = {
-  codebase: { bar: "from-violet-500 to-violet-400", dot: "bg-violet-500", badge: "bg-violet-500/15 text-violet-400", buttonBg: "bg-violet-500", buttonBorder: "border-violet-600" },
-  docs: { bar: "from-sky-500    to-sky-400", dot: "bg-sky-500", badge: "bg-sky-500/15 text-sky-400", buttonBg: "bg-sky-500", buttonBorder: "border-sky-600" },
-  slack: { bar: "from-emerald-500 to-emerald-400", dot: "bg-emerald-500", badge: "bg-emerald-500/15 text-emerald-400", buttonBg: "bg-emerald-500", buttonBorder: "border-emerald-600" },
-  notion: { bar: "from-amber-500  to-amber-400", dot: "bg-amber-500", badge: "bg-amber-500/15 text-amber-400", buttonBg: "bg-amber-500", buttonBorder: "border-amber-600" },
+  codebase: { bar: "from-lime-500 to-lime-400", dot: "bg-lime-500", badge: "bg-lime-500/15 text-lime-400", buttonBg: "bg-lime-500", buttonBorder: "border-lime-600" },
+  docs: { bar: "from-orange-500    to-orange-400", dot: "bg-orange-500", badge: "bg-orange-500/15 text-orange-400", buttonBg: "bg-orange-500", buttonBorder: "border-orange-600" },
+  slack: { bar: "from-emerald-500 to-ok", dot: "bg-emerald-500", badge: "bg-emerald-500/15 text-ok", buttonBg: "bg-emerald-500", buttonBorder: "border-emerald-600" },
+  notion: { bar: "from-amber-500  to-warn", dot: "bg-amber-500", badge: "bg-amber-500/15 text-warn", buttonBg: "bg-amber-500", buttonBorder: "border-amber-600" },
 };
 
 const RETRIEVAL_QUERIES = [
@@ -667,7 +667,7 @@ export function Card4() {
 
                 {/* Icon Container with 3D effect */}
                 <div
-                  className={`relative flex shrink-0 items-center justify-center w-[36px] h-[36px] rounded-[12px] border transition-all duration-500 ${isActive ? `shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_4px_4px_0_0_rgba(255,255,255,0.06),inset_6px_6px_0_0_rgba(255,255,255,0.04),inset_8px_8px_0_0_rgba(255,255,255,0.02),0_1px_2px_0_rgba(0,0,0,0.08),0_2px_4px_0_rgba(0,0,0,0.06),0_4px_6px_0_rgba(0,0,0,0.04),0_6px_8px_0_rgba(0,0,0,0.02)] text-white ${c.buttonBg} ${c.buttonBorder} scale-105` : 'dark:bg-neutral-950/80 shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_1px_2px_-1px_rgba(0,0,0,0.06),0_2px_4px_0px_rgba(0,0,0,0.04)] bg-white border-transparent text-[#A1A1A1]'}`}
+                  className={`relative flex shrink-0 items-center justify-center w-[36px] h-[36px] rounded-[12px] border transition-all duration-500 ${isActive ? `shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_4px_4px_0_0_rgba(255,255,255,0.06),inset_6px_6px_0_0_rgba(255,255,255,0.04),inset_8px_8px_0_0_rgba(255,255,255,0.02),0_1px_2px_0_rgba(0,0,0,0.08),0_2px_4px_0_rgba(0,0,0,0.06),0_4px_6px_0_rgba(0,0,0,0.04),0_6px_8px_0_rgba(0,0,0,0.02)] text-foreground ${c.buttonBg} ${c.buttonBorder} scale-105` : 'dark:bg-neutral-950/80 shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_1px_2px_-1px_rgba(0,0,0,0.06),0_2px_4px_0px_rgba(0,0,0,0.04)] bg-white border-transparent text-[#A1A1A1]'}`}
                 >
                   <Icon size={16} weight={isActive ? "fill" : "regular"} className="relative z-10" />
                 </div>
@@ -722,11 +722,11 @@ export function Card4() {
         <div className="flex items-center gap-2 pt-3 mt-auto">
           <div className="relative flex items-center justify-center w-2 h-2">
             <motion.div
-              className="absolute inset-0 rounded-full bg-emerald-400/40"
+              className="absolute inset-0 rounded-full bg-ok/40"
               animate={{ scale: [1, 2.5, 1], opacity: [0.5, 0, 0.5] }}
               transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
             />
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <div className="w-1.5 h-1.5 rounded-full bg-ok" />
           </div>
           <span className="text-[8px] font-mono text-muted-foreground font-medium tracking-wide">Live retrieval active</span>
         </div>
@@ -775,10 +775,10 @@ export function Card4() {
 ───────────────────────────────────────────── */
 export function Card5() {
   const tools = [
-    { name: "observe", calls: 14, icon: Globe, latency: "280ms", color: "bg-gradient-to-b from-sky-400 to-sky-600", borderColor: "border-sky-600" },
-    { name: "commit", calls: 8, icon: TerminalWindow, latency: "1.2s", color: "bg-gradient-to-b from-emerald-400 to-emerald-600", borderColor: "border-emerald-600" },
-    { name: "verify", calls: 22, icon: FileText, latency: "12ms", color: "bg-gradient-to-b from-amber-400 to-amber-600", borderColor: "border-amber-600" },
-    { name: "recall", calls: 31, icon: Brain, latency: "95ms", color: "bg-gradient-to-b from-violet-400 to-violet-600", borderColor: "border-violet-600" },
+    { name: "observe", calls: 14, icon: Globe, latency: "280ms", color: "bg-gradient-to-b from-orange-400 to-orange-600", borderColor: "border-orange-600" },
+    { name: "commit", calls: 8, icon: TerminalWindow, latency: "1.2s", color: "bg-gradient-to-b from-ok to-emerald-600", borderColor: "border-emerald-600" },
+    { name: "verify", calls: 22, icon: FileText, latency: "12ms", color: "bg-gradient-to-b from-warn to-amber-600", borderColor: "border-amber-600" },
+    { name: "recall", calls: 31, icon: Brain, latency: "95ms", color: "bg-gradient-to-b from-lime-400 to-lime-600", borderColor: "border-lime-600" },
   ];
 
   return (
@@ -794,7 +794,7 @@ export function Card5() {
           >
             {/* Top Row: 3D Icon + Calls */}
             <div className="flex items-start justify-between">
-              <div className={`w-[28px] h-[28px] rounded-[8px] flex items-center justify-center text-white ${t.color} border ${t.borderColor} shadow-[inset_0_0.5px_0_0_rgba(255,255,255,0.6),inset_0.5px_0_0_0_rgba(255,255,255,0.2),inset_0_2px_6px_0_rgba(255,255,255,0.3),inset_0_-0.5px_0_0_rgba(0,0,0,0.3),inset_-0.5px_0_0_0_rgba(0,0,0,0.1),inset_0_-2px_6px_0_rgba(0,0,0,0.1),0_1px_2px_0_rgba(0,0,0,0.08),0_2px_4px_0_rgba(0,0,0,0.06),0_4px_6px_0_rgba(0,0,0,0.04)] group-hover:scale-105 transition-transform duration-300`}>
+              <div className={`w-[28px] h-[28px] rounded-[8px] flex items-center justify-center text-foreground ${t.color} border ${t.borderColor} shadow-[inset_0_0.5px_0_0_rgba(255,255,255,0.6),inset_0.5px_0_0_0_rgba(255,255,255,0.2),inset_0_2px_6px_0_rgba(255,255,255,0.3),inset_0_-0.5px_0_0_rgba(0,0,0,0.3),inset_-0.5px_0_0_0_rgba(0,0,0,0.1),inset_0_-2px_6px_0_rgba(0,0,0,0.1),0_1px_2px_0_rgba(0,0,0,0.08),0_2px_4px_0_rgba(0,0,0,0.06),0_4px_6px_0_rgba(0,0,0,0.04)] group-hover:scale-105 transition-transform duration-300`}>
                 <t.icon weight="fill" className="w-3.5 h-3.5 relative z-10" />
               </div>
 

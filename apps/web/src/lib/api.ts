@@ -173,7 +173,7 @@ export const keyOf = (b: Pick<Belief, "id" | "version">) => `${b.id}@${b.version
 export const prettyStatement = (s: string) => s.replace(/0x[0-9a-fA-F]{20,}/g, (a) => middle(a, 8, 4));
 
 /** Stable colour per tag. */
-const PALETTE = ["#a78bfa", "#67e8f9", "#6ee7b7", "#fcd34d", "#fda4af", "#93c5fd", "#f0abfc", "#fdba74"];
+const PALETTE = ["#d4ff3a", "#ff7a45", "#b6f25c", "#ffc23d", "#f3efe6", "#ff9f7a", "#e6ff8a", "#c9c2b3"];
 export function tagColor(tag: string | undefined): string {
   if (!tag) return PALETTE[0]!;
   let h = 0;

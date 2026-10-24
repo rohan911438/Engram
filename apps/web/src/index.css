@@ -3,16 +3,24 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
+@import "@fontsource-variable/bricolage-grotesque";
 @import "@fontsource/instrument-serif/400.css";
 @import "@fontsource/instrument-serif/400-italic.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Engram — "Ink & Signal"
+ * Warm ink black, bone text, one loud signal colour (acid lime) and an ember
+ * second accent. Display type is Bricolage Grotesque; labels are mono.
+ */
+
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-heading: var(--font-display);
+    --font-display: "Bricolage Grotesque Variable", "Geist Variable", sans-serif;
+    --font-sans: "Geist Variable", sans-serif;
     --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
-    --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+    --font-mono: "Geist Mono Variable", ui-monospace, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -51,152 +59,156 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+
+    /* Signal colours */
+    --color-brand: #d4ff3a;
+    --color-brand-2: #ff7a45;
+    --color-bone: #f3efe6;
+    --color-ink: #0a0a09;
+    --color-ok: #b6f25c;
+    --color-warn: #ffc23d;
+    --color-surface-1: var(--surface-1);
+    --color-surface-2: var(--surface-2);
+    --color-surface-3: var(--surface-3);
+
     --animate-shiny-text: shiny-text 8s infinite;
+    --animate-marquee: marquee 38s linear infinite;
   @keyframes shiny-text {
-  0%, 90%, 100% {
-    background-position: calc(-100% - var(--shiny-width)) 0;
-        }
-  30%, 60% {
-    background-position: calc(100% + var(--shiny-width)) 0;
-        }
-    }
+    0%, 90%, 100% { background-position: calc(-100% - var(--shiny-width)) 0; }
+    30%, 60% { background-position: calc(100% + var(--shiny-width)) 0; }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
 }
 
-:root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-}
-
+/* One theme only: the app always runs dark (html has class="dark"). */
+:root,
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #0a0a09;
+    --foreground: #f3efe6;
+    --card: #121211;
+    --card-foreground: #f3efe6;
+    --popover: #141413;
+    --popover-foreground: #f3efe6;
+    --primary: #d4ff3a;
+    --primary-foreground: #0a0a09;
+    --secondary: #1b1b19;
+    --secondary-foreground: #f3efe6;
+    --muted: #1b1b19;
+    --muted-foreground: #aaa59a;
+    --accent: #1f1f1c;
+    --accent-foreground: #f3efe6;
+    --destructive: #ff5b4a;
+    --border: rgb(243 239 230 / 9%);
+    --input: rgb(243 239 230 / 13%);
+    --ring: rgb(212 255 58 / 55%);
+    --chart-1: #d4ff3a;
+    --chart-2: #ff7a45;
+    --chart-3: #b6f25c;
+    --chart-4: #ffc23d;
+    --chart-5: #f3efe6;
+    --radius: 0.7rem;
+    --sidebar: #0d0d0c;
+    --sidebar-foreground: #f3efe6;
+    --sidebar-primary: #d4ff3a;
+    --sidebar-primary-foreground: #0a0a09;
+    --sidebar-accent: #1b1b19;
+    --sidebar-accent-foreground: #f3efe6;
+    --sidebar-border: rgb(243 239 230 / 8%);
+    --sidebar-ring: rgb(212 255 58 / 55%);
+    --surface-1: #0f0f0e;
+    --surface-2: #141413;
+    --surface-3: #1b1b19;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
-}
-/* ---- Engram theme: pure black, layered shades (overrides shadcn defaults) ---- */
-.dark {
-    --background: oklch(0 0 0);
-    --foreground: oklch(0.97 0 0);
-    --card: oklch(0.13 0.003 280);
-    --card-foreground: oklch(0.97 0 0);
-    --popover: oklch(0.15 0.004 280);
-    --popover-foreground: oklch(0.97 0 0);
-    --primary: oklch(0.74 0.16 292);
-    --primary-foreground: oklch(0.12 0.02 292);
-    --secondary: oklch(0.19 0.004 280);
-    --secondary-foreground: oklch(0.97 0 0);
-    --muted: oklch(0.18 0.003 280);
-    --muted-foreground: oklch(0.76 0.008 280);
-    --accent: oklch(0.2 0.01 285);
-    --accent-foreground: oklch(0.97 0 0);
-    --destructive: oklch(0.68 0.2 22);
-    --border: oklch(1 0 0 / 9%);
-    --input: oklch(1 0 0 / 12%);
-    --ring: oklch(0.74 0.16 292 / 55%);
-    --chart-1: oklch(0.74 0.16 292);
-    --chart-2: oklch(0.8 0.12 200);
-    --chart-3: oklch(0.8 0.15 160);
-    --chart-4: oklch(0.83 0.15 85);
-    --chart-5: oklch(0.7 0.19 20);
-    --surface-1: oklch(0.09 0.002 280);
-    --surface-2: oklch(0.12 0.003 280);
-    --surface-3: oklch(0.16 0.004 280);
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+  }
+  ::selection {
+    background: rgb(212 255 58 / 85%);
+    color: #0a0a09;
+  }
 }
 
-@theme inline {
-    --color-ok: oklch(0.78 0.16 160);
-    --color-warn: oklch(0.83 0.15 85);
-    --color-brand: oklch(0.72 0.17 290);
-    --color-brand-2: oklch(0.8 0.12 200);
-    --color-surface-1: var(--surface-1);
-    --color-surface-2: var(--surface-2);
-    --color-surface-3: var(--surface-3);
-}
+html, body { background: #0a0a09; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
 
 @layer utilities {
+  .font-display { font-family: var(--font-display); font-optical-sizing: auto; }
+
+  /* Small uppercase mono label, the "[01] — section" voice of the site. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  /* Headlines: solid bone; the accent is solid signal lime. */
+  .text-headline { color: var(--color-bone); }
+  .text-accent { color: var(--color-brand); }
+  .text-gradient { color: var(--color-brand); }
+
+  .hairline { height: 1px; background: rgb(243 239 230 / 9%); }
+
+  /* Card: raised ink surface with a crisp hairline edge. */
+  .card-black {
+    position: relative;
+    background: var(--surface-1);
+    border: 1px solid rgb(243 239 230 / 8%);
+    border-radius: 1.1rem;
+    transition: border-color .3s, background-color .3s;
+  }
+  .card-black:hover { border-color: rgb(243 239 230 / 14%); }
+
+  /* Panel used across the app views. */
+  .panel {
+    background: var(--surface-1);
+    border: 1px solid rgb(243 239 230 / 8%);
+    border-radius: 1.1rem;
+  }
+
+  /* Blueprint grid (backgrounds.supply style). */
   .bg-grid {
     background-image:
-      linear-gradient(to right, oklch(1 0 0 / 3.5%) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(1 0 0 / 3.5%) 1px, transparent 1px);
-    background-size: 32px 32px;
+      linear-gradient(to right, rgb(243 239 230 / 4.5%) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(243 239 230 / 4.5%) 1px, transparent 1px);
+    background-size: 64px 64px;
   }
-  .text-gradient {
-    background: linear-gradient(100deg, var(--color-brand), var(--color-brand-2));
-    -webkit-background-clip: text;
-    background-clip: text;
+  .bg-dots {
+    background-image: radial-gradient(rgb(243 239 230 / 11%) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .glow { box-shadow: 0 0 0 1px rgb(243 239 230 / 6%), 0 18px 60px -20px rgb(212 255 58 / 30%); }
+
+  .grain::after,
+  .bg-noise::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: .07; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27180%27 height=%27180%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.85%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E");
+  }
+
+  .text-balance { text-wrap: balance; }
+  .mask-fade-b { mask-image: linear-gradient(to bottom, black 60%, transparent); }
+  .mask-radial { mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%); }
+  .mask-fade-x { mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent); }
+
+  /* Outlined display text for the giant footer wordmark. */
+  .text-outline {
     color: transparent;
-  }
-  .glow {
-    box-shadow: 0 0 0 1px oklch(1 0 0 / 6%), 0 10px 40px -12px oklch(0.72 0.17 290 / 35%);
+    -webkit-text-stroke: 1px rgb(243 239 230 / 22%);
   }
 }
 
@@ -210,21 +222,6 @@
   fill: currentColor !important;
 }
 .react-flow__controls-button:hover { background: var(--accent) !important; }
-/* Subtle noise for depth on large black areas */
-@layer utilities {
-  .bg-noise::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27160%27 height=%27160%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%272%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E");
-  }
-  .text-balance { text-wrap: balance; }
-  .mask-fade-b { mask-image: linear-gradient(to bottom, black 60%, transparent); }
-  .mask-radial { mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%); }
-}
-html, body { background: #000; }
 
 /* ---- From Vengeance UI (MIT) globals: keyframes its components rely on ---- */
 @keyframes flip { 0% { transform: rotateX(0deg); } 25%, 100% { transform: rotateX(90deg); } }
@@ -234,44 +231,11 @@ html, body { background: #000; }
 @keyframes glow-angle-rotate { to { --glow-angle: 1turn; } }
 .glow-conic {
   border-image: conic-gradient(from var(--glow-angle),
-      var(--glow-color-1, #669900), var(--glow-color-2, #99cc33), var(--glow-color-3, #ccee66),
-      var(--glow-color-4, #006699), var(--glow-color-5, #3399cc), var(--glow-color-6, #990066),
-      var(--glow-color-7, #cc3399), var(--glow-color-8, #ff6600), var(--glow-color-9, #ff9900),
-      var(--glow-color-10, #ffcc00), var(--glow-color-1, #669900)) 1;
+      var(--glow-color-1, #d4ff3a), var(--glow-color-2, #b6f25c), var(--glow-color-3, #ff7a45),
+      var(--glow-color-4, #d4ff3a)) 1;
   animation: glow-angle-rotate var(--glow-animation-duration, 4s) linear infinite;
 }
 
-/* ---- Premium black homepage helpers ---- */
-@layer utilities {
-  /* Bright-to-soft white headline, like light falling on type */
-  .text-headline {
-    background: linear-gradient(180deg, #ffffff 0%, #ffffff 45%, rgba(255,255,255,0.72) 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .text-accent {
-    background: linear-gradient(95deg, #e9e4ff 0%, #b9a7ff 35%, #8be9fd 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  /* Hairline that glows in the middle and fades at the ends */
-  .hairline {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(167,139,250,0.35) 30%, rgba(103,232,249,0.35) 70%, transparent);
-  }
-  /* Card: pure black body, gradient edge that is lit from the top */
-  .card-black {
-    position: relative;
-    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.008) 40%, transparent) , #000;
-    border-radius: 1.25rem;
-  }
-  .card-black::before {
-    content: ""; position: absolute; inset: 0; padding: 1px; border-radius: inherit; pointer-events: none;
-    background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04) 45%, rgba(255,255,255,0.02));
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor; mask-composite: exclude;
-  }
-  .grain::after {
-    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: .06; mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27180%27 height=%27180%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.85%27 numOctaves=%273%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E");
-  }
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee { animation: none; }
 }
-html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }

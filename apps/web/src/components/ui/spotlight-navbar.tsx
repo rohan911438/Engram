@@ -143,8 +143,8 @@ export function SpotlightNavbar({
                                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-white/30",
                                     // Active vs Inactive Text
                                     activeIndex === idx
-                                        ? "text-black dark:text-white"
-                                        : "text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white"
+                                        ? "text-black dark:text-foreground"
+                                        : "text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-foreground"
                                 )}
                             >
                                 {item.label}
