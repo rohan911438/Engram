@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @engram/web build",
+  "buildCommand": "pnpm --filter @rohankumar4179/engram-sdk build && pnpm --filter @engram/web build",
   "outputDirectory": "apps/web/dist",
   "installCommand": "pnpm install --frozen-lockfile",
   "rewrites": [
