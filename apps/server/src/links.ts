@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { Engram, importAudit, verifyAudit, type Anchorer, type AuditBundle, type RemoteHit, type RemoteMemory } from "@rohankumar4179/engram-sdk";
+import { Engram, importAudit, probeWalrusBlob, verifyAudit, type Anchorer, type AuditBundle, type RemoteHit, type RemoteMemory } from "@rohankumar4179/engram-sdk";
 import type { Signer } from "./secret.js";
 
 /** Signed link tokens: checkable without links.json, so they survive a restart that wipes the disk. */
@@ -59,8 +59,16 @@ const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const AGENT_RE = /^[a-z0-9][a-z0-9-]{0,40}$/;
 
-/** Linked agents' manifests live in their owner's Walrus Memory account — not readable here. */
+/**
+ * Linked agents' manifests live in their owner's Walrus Memory account, encrypted
+ * for the owner. The server can't read them, but it can confirm each manifest
+ * blob is stored on Walrus through the public aggregator.
+ */
+type BlobProbe = (blobId: string) => Promise<{ ok: boolean; detail: string }>;
+const publicProbe: BlobProbe = (blobId) => probeWalrusBlob(blobId, process.env.WALRUS_AGGREGATOR);
+
 class OwnerOnlyRemote implements RemoteMemory {
+  constructor(readonly probeBlob: BlobProbe) {}
   async putMany(): Promise<string[]> {
     throw new Error("linked agents are read-only here");
   }
@@ -83,6 +91,8 @@ export class LinkService {
     private dataDir: string,
     private anchorer?: Anchorer,
     private signer?: Signer,
+    /** How manifests are checked on Walrus (default: the public aggregator). */
+    private probe: BlobProbe = publicProbe,
   ) {
     mkdirSync(dataDir, { recursive: true });
     this.tokensPath = join(dataDir, "links.json");
@@ -248,7 +258,7 @@ export class LinkService {
     const mtime = statSync(bundlePath).mtimeMs;
     const cached = this.engrams.get(key);
     if (cached && cached.mtime === mtime) return cached.engram;
-    const engram = Engram.open({ dir, remote: new OwnerOnlyRemote(), anchorer: this.anchorer, readOnly: true });
+    const engram = Engram.open({ dir, remote: new OwnerOnlyRemote(this.probe), anchorer: this.anchorer, readOnly: true });
     this.engrams.set(key, { mtime, engram });
     return engram;
   }

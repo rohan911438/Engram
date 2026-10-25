@@ -20,6 +20,23 @@ export interface RemoteMemory {
    * records) — for verification, which needs one exact record.
    */
   search(namespace: string, query: string, limit?: number, opts?: SearchOptions): Promise<RemoteHit[]>;
+  /**
+   * For verifiers that can't read the owner's account: confirms a blob is
+   * stored on Walrus without decrypting it. Used when `search` is unavailable.
+   */
+  probeBlob?(blobId: string): Promise<{ ok: boolean; detail: string }>;
+}
+
+/** Public Walrus aggregator (Mainnet) — anyone can check that a blob is stored. */
+export const WALRUS_AGGREGATOR = "https://aggregator.walrus-mainnet.walrus.space";
+
+/** Checks a blob is stored and readable on Walrus via a public aggregator (bytes stay encrypted). */
+export async function probeWalrusBlob(blobId: string, aggregator = WALRUS_AGGREGATOR): Promise<{ ok: boolean; detail: string }> {
+  if (!/^[A-Za-z0-9_-]{20,}$/.test(blobId)) return { ok: false, detail: "not a Walrus blob ID" };
+  const res = await fetch(`${aggregator.replace(/\/+$/, "")}/v1/blobs/${blobId}`, { method: "HEAD", signal: AbortSignal.timeout(20_000) });
+  if (res.ok) return { ok: true, detail: `manifest blob ${blobId.slice(0, 10)}… is stored on Walrus (encrypted; its root is public in the Sui anchor)` };
+  if (res.status === 404) return { ok: false, detail: `manifest blob ${blobId.slice(0, 10)}… was not found on Walrus` };
+  throw new Error(`Walrus aggregator answered HTTP ${res.status}`);
 }
 
 export interface SearchOptions {

@@ -670,7 +670,15 @@ export class Engram {
 
     if (opts.walrus === false) add("walrus", true, "skipped", true);
     else if (!c.manifestBlobId) add("walrus", false, "manifest was never stored on Walrus");
-    else {
+    else if (this.remote.probeBlob) {
+      // Verifier without the owner's key: check the blob is stored on Walrus instead of reading it.
+      try {
+        const r = await this.remote.probeBlob(c.manifestBlobId);
+        add("walrus", r.ok, r.detail);
+      } catch (err) {
+        add("walrus", true, `could not reach Walrus: ${(err as Error).message}`, true);
+      }
+    } else {
       try {
         const hits = await this.remote.search(this.config.namespaces.commits, `Engram commit ${c.id}`, 10, { deep: true });
         const hit = hits.find((h) => h.blobId === c.manifestBlobId);

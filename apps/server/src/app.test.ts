@@ -51,7 +51,7 @@ beforeAll(async () => {
   const ep = e.observe({ source: "user", data: "hi" });
   e.applyOp({ op: "create", key: "x", statement: "X.", confidence: 0.8, evidence: [ep.id], tags: ["x"], reason: "t" });
   await e.commit("demo");
-  const server = createApp({ tenants: new Tenants(join(dir, "data"), services), demo: new Tenant("demo", demoDir, services, true), staticDir: null, storageChain: chain, limits: { auth: { max: 40, windowMs: 60_000 } }, links: new LinkService(join(dir, "data"), services.anchorer) });
+  const server = createApp({ tenants: new Tenants(join(dir, "data"), services), demo: new Tenant("demo", demoDir, services, true), staticDir: null, storageChain: chain, limits: { auth: { max: 40, windowMs: 60_000 } }, links: new LinkService(join(dir, "data"), services.anchorer, undefined, async (b) => ({ ok: true, detail: `manifest blob ${b.slice(0, 10)}… is stored on Walrus (test)` })) });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   stop = () => server.close();
@@ -199,7 +199,10 @@ describe("agents", () => {
     expect(blame.evidence[0].episode.summary).toMatch(/private/);
     const v = (await call(`/api/linked/${id}/verify/HEAD`, { cookie })).body;
     expect(v.ok).toBe(true);
-    expect(v.checks.find((c: { name: string }) => c.name === "walrus").skipped).toBe(true);
+    // The server can't read the owner's Walrus Memory, but checks the manifest blob is stored.
+    const walrus = v.checks.find((c: { name: string }) => c.name === "walrus");
+    expect(walrus.skipped).toBeFalsy();
+    expect(walrus.detail).toMatch(/stored on Walrus/);
 
     // another wallet can't see it
     const other = (await signIn(new Ed25519Keypair())).res.setCookie!.split(";")[0]!;

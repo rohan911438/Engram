@@ -6,7 +6,7 @@ export * from "./tatum.js";
 export * from "./anchor.js";
 export { KeyVault } from "./vault.js";
 export { LocalStore, JsonFile } from "./store.js";
-export { WalrusMemoryRemote, InMemoryRemote, CombinedRemote, MEMWAL_MAINNET, type RemoteMemory, type RemoteHit, type WalrusMemoryConfig, type ManualModeConfig, type SearchOptions } from "./remote.js";
+export { WalrusMemoryRemote, InMemoryRemote, CombinedRemote, MEMWAL_MAINNET, WALRUS_AGGREGATOR, probeWalrusBlob, type RemoteMemory, type RemoteHit, type WalrusMemoryConfig, type ManualModeConfig, type SearchOptions } from "./remote.js";
 export { GeminiLLM, ScriptedLLM, geminiEmbedder, type LLM, type Schema, type GeminiOptions } from "./llm.js";
 export { proposeOps, validateOps, buildPrompt, type BeliefOp, type ConsolidationInput } from "./consolidator.js";
 export * from "./engram.js";
