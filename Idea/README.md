@@ -5,15 +5,15 @@
 Engram gives AI agents a memory that **learns, keeps its history, and can prove what it knew**.
 It is built on **Walrus Memory**, with proofs on **Sui** read through **Tatum**.
 
-| | |
+| Resource | Link |
 |---|---|
-| 🌐 Live app | https://engram-blond.vercel.app |
-| 📖 Docs | https://engram-blond.vercel.app/docs |
-| 🔎 Live demo agent (no wallet needed) | https://engram-blond.vercel.app/demo |
-| 📦 CLI | `npx @rohankumar4179/engram` ([npm](https://www.npmjs.com/package/@rohankumar4179/engram)) |
-| 📦 SDK | `npm i @rohankumar4179/engram-sdk` ([npm](https://www.npmjs.com/package/@rohankumar4179/engram-sdk)) |
-| 💻 Code | https://github.com/rohan911438/Engram |
-| 🏁 Hackathon | Total Recall (Tatum × Walrus). Track 02: *Smart Agents for Real Life* |
+| Live app | https://engram-blond.vercel.app |
+| Docs | https://engram-blond.vercel.app/docs |
+| Live demo agent (no wallet needed) | https://engram-blond.vercel.app/demo |
+| CLI | `npx @rohankumar4179/engram` ([npm](https://www.npmjs.com/package/@rohankumar4179/engram)) |
+| SDK | `npm i @rohankumar4179/engram-sdk` ([npm](https://www.npmjs.com/package/@rohankumar4179/engram-sdk)) |
+| Code | https://github.com/rohan911438/Engram |
+| Hackathon | Total Recall (Tatum × Walrus). Track 02: *Smart Agents for Real Life* |
 
 ---
 

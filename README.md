@@ -8,15 +8,15 @@ with every snapshot anchored on **Sui** and every chain read going through **[Ta
 
 Built for the Tatum × Walrus **Total Recall** hackathon, Track 02: *Smart Agents for Real Life*.
 
-| | |
+| Resource | Link |
 |---|---|
-| 🌐 **Live app** | https://engram-blond.vercel.app |
-| 🔎 **Live demo agent** (no wallet needed) | https://engram-blond.vercel.app/demo |
-| 📖 **Docs** | https://engram-blond.vercel.app/docs |
-| 📦 **CLI** | [`@rohankumar4179/engram`](https://www.npmjs.com/package/@rohankumar4179/engram): `npx @rohankumar4179/engram` |
-| 📦 **SDK** | [`@rohankumar4179/engram-sdk`](https://www.npmjs.com/package/@rohankumar4179/engram-sdk): `npm i @rohankumar4179/engram-sdk` |
-| ⛓️ **Move contract** | [`engram_anchor`](#smart-contract-engram_anchor) on Sui Testnet |
-| 🧾 **On-chain evidence** | [16 memories on Walrus Mainnet + 4 anchored commits](#on-chain-evidence-verify-it-yourself) |
+| Live app | https://engram-blond.vercel.app |
+| Live demo agent (no wallet needed) | https://engram-blond.vercel.app/demo |
+| Documentation | https://engram-blond.vercel.app/docs |
+| CLI | [`@rohankumar4179/engram`](https://www.npmjs.com/package/@rohankumar4179/engram): `npx @rohankumar4179/engram` |
+| SDK | [`@rohankumar4179/engram-sdk`](https://www.npmjs.com/package/@rohankumar4179/engram-sdk): `npm i @rohankumar4179/engram-sdk` |
+| Move contract | [`engram_anchor`](#smart-contract-engram_anchor) on Sui Testnet |
+| On-chain evidence | [16 memories on Walrus Mainnet + 4 anchored commits](#on-chain-evidence-verify-it-yourself) |
 
 ---
 
@@ -24,7 +24,7 @@ Built for the Tatum × Walrus **Total Recall** hackathon, Track 02: *Smart Agent
 
 1. [Engram in one minute](#engram-in-one-minute)
 2. [Why Walrus](#why-walrus)
-3. [How it works: the workflow](#how-it-works-the-workflow)
+3. [Architecture](#architecture): system, memory lifecycle, commit flow, verification, dashboard link, data model
 4. [Smart contract: `engram_anchor`](#smart-contract-engram_anchor)
 5. [On-chain evidence: verify it yourself](#on-chain-evidence-verify-it-yourself)
 6. [The demo agent: money-ops](#the-demo-agent-money-ops)
@@ -69,25 +69,96 @@ the money-ops agent's wallet activity all come through Tatum's Sui gRPC gateway.
 
 ---
 
-## How it works: the workflow
+## Architecture
 
+### 1. System architecture
+
+Engram runs next to your agent. The owner keeps the keys; Walrus holds the data; Sui holds the
+public proof; the web app only ever sees what it can re-verify.
+
+```mermaid
+flowchart TB
+    subgraph L1["Access layer"]
+        direction LR
+        AGENT["Your AI agent<br/>(SDK: engram · wrap)"]
+        CLI["CLI<br/>npx @rohankumar4179/engram"]
+        MCP["MCP server<br/>Claude Code · Cursor"]
+        BROWSER["Browser + Sui wallet<br/>dashboard · docs · demo"]
+    end
+
+    subgraph L2["Engram layer"]
+        direction LR
+        CORE["<b>Engram core</b><br/>observe · sleep · commit · decide<br/>verify · forget · link<br/><i>keys + key vault stay local</i>"]
+        API["<b>Engram API</b> (Render)<br/>wallet auth · hosted agents<br/>linked dashboards · live verify"]
+    end
+
+    subgraph L3["Services"]
+        direction LR
+        LLM["Gemini<br/>episodes → beliefs"]
+        TATUM["Tatum<br/>Sui gRPC gateway"]
+    end
+
+    subgraph L4["Decentralised storage and proof"]
+        direction LR
+        WALRUS[("<b>Walrus Mainnet</b><br/>Walrus Memory + Seal<br/>episodes · beliefs · manifests · receipts")]
+        SUI[("<b>Sui</b><br/>Walrus Blob objects<br/>engram_anchor events")]
+    end
+
+    AGENT --> CORE
+    CLI --> CORE
+    MCP --> CORE
+    BROWSER --> API
+    CORE -- "sync audit bundle" --> API
+    CORE -- "sleep" --> LLM
+    CORE -- "store encrypted" --> WALRUS
+    CORE -- "anchor root" --> SUI
+    CORE -- "read chain" --> TATUM
+    API -- "re-verify" --> TATUM
+    TATUM --> SUI
+    WALRUS -. "blob registered on" .-> SUI
+
+    classDef engram fill:#d4ff3a,stroke:#0a0a09,color:#0a0a09
+    classDef access fill:#ffffff,stroke:#555,color:#0a0a09
+    classDef svc fill:#fff4e6,stroke:#ff7a45,color:#0a0a09
+    classDef dec fill:#eef4ff,stroke:#3b5bdb,color:#0a0a09
+    class CORE,API engram
+    class AGENT,CLI,MCP,BROWSER access
+    class LLM,TATUM svc
+    class WALRUS,SUI dec
 ```
-            ┌──────────────────────────── ENGRAM (CLI · SDK · MCP) ───────────────────────────┐
- wallet tx  │                                                                                 │
- user chat ─┼─▶ 1 observe ──▶ episode (AES-256-GCM, own key) ──────────────▶ Walrus Memory   │
- tool data  │                       │                                                         │
-            │                 2 sleep (LLM, grounded in episode IDs)                          │
-            │                       ▼                                                         │
-            │                 beliefs (versioned · confidence · evidence) ─────▶ Walrus Memory │
-            │                       │                                                         │
-            │                 3 commit: Merkle root → Ed25519-signed manifest ─▶ Walrus Memory │
-            │                       │                         └── engram_anchor::anchor ──▶ Sui │
-            │                       ▼                                                         │
- decision ◀─┼── 4 decide / wrap: relevant beliefs in → signed receipt + Merkle proofs        │
-            │                                                                                 │
-            │   5 verify: signature → proofs → root → history → Walrus → Sui (via Tatum)     │
-            │   6 link / sync ──▶ Engram web app (re-verified by the server, read-only)      │
-            └─────────────────────────────────────────────────────────────────────────────────┘
+
+| Component | Role | Tech |
+|---|---|---|
+| **SDK / CLI / MCP** | The engine: observe, sleep, commit, decide, verify, forget | TypeScript, Node 20 |
+| **Local `.engram/`** | Agent signing key, per-memory key vault, local index of commits | Ed25519, AES-256-GCM |
+| **Walrus Memory** | Stores every layer, encrypted for the owner; semantic recall | `@mysten-incubation/memwal` |
+| **Sui + `engram_anchor`** | Public, timestamped Merkle roots; Walrus Blob objects | Move |
+| **Tatum** | Every Mainnet chain read: Blob objects, anchors, wallet activity | Sui gRPC gateway |
+| **Gemini** | Turns episodes into beliefs during `sleep` | Grounded JSON output |
+| **Web app + API** | Wallet sign-in, hosted agents, linked dashboards, live verify | React, Vite, Node, Docker |
+
+### 2. Memory lifecycle
+
+How a raw event becomes a provable decision.
+
+```mermaid
+flowchart LR
+    IN["Wallet tx<br/>user message<br/>tool result"] --> OBS["1 · observe"]
+    OBS --> EP["Episode<br/>encrypted with its own key"]
+    EP --> SLEEP["2 · sleep<br/>LLM consolidation"]
+    SLEEP --> BEL["Beliefs<br/>versioned · confidence · evidence"]
+    BEL --> COMMIT["3 · commit<br/>Merkle root + Ed25519 signature"]
+    COMMIT --> PROOF["Manifest on Walrus<br/>root anchored on Sui"]
+    BEL --> DECIDE["4 · decide / wrap<br/>relevant beliefs in"]
+    DECIDE --> REC["Signed receipt<br/>Merkle proofs into HEAD"]
+    REC --> VERIFY["5 · verify<br/>anyone, anytime"]
+    PROOF --> VERIFY
+    PROOF --> SYNC["6 · link / sync<br/>web dashboard"]
+
+    classDef step fill:#d4ff3a,stroke:#0a0a09,color:#0a0a09
+    classDef data fill:#1b1b19,stroke:#d4ff3a,color:#f3efe6
+    class OBS,SLEEP,COMMIT,DECIDE,VERIFY,SYNC step
+    class EP,BEL,PROOF,REC data
 ```
 
 | Step | Command | What happens |
@@ -101,6 +172,162 @@ the money-ops agent's wallet activity all come through Tatum's Sui gRPC gateway.
 
 Also: `diff` (what changed), `checkout` (memory at any commit or date), `blame` (evidence behind a
 belief), `bisect` (find where it learned something wrong), `forget` (provable forgetting).
+
+### 3. Commit flow
+
+What happens during `engram commit`, step by step.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant D as Developer / agent
+    participant E as Engram SDK
+    participant W as Walrus Memory
+    participant S as Sui (engram_anchor)
+    participant T as Tatum gRPC
+
+    D->>E: commit("week 2")
+    E->>W: push pending episodes, beliefs, receipts
+    W-->>E: Walrus blob IDs
+    E->>E: Merkle tree over beliefs + tombstones
+    E->>E: manifest {parent, root, beliefs, blob IDs}, signed with Ed25519
+    E->>W: store manifest
+    W-->>E: manifest blob ID
+    E->>S: anchor(agent key, commit ID, root, parent, manifest blob)
+    S-->>E: Anchored event in checkpoint N
+    E->>T: read back Blob object and anchor
+    T-->>E: confirmed on chain
+    E-->>D: commit 19040b51, root 392bf9cb…, anchored
+```
+
+### 4. Verification pipeline
+
+`engram verify` and the **Verify** button run the same checks. Any failure makes the result INVALID.
+
+```mermaid
+flowchart TB
+    R(["Receipt r_…<br/>or commit"]) --> A
+
+    subgraph S1["1 · The decision"]
+        direction LR
+        A["Receipt signature<br/>Ed25519 by the agent"] --> B["Belief Merkle proofs<br/>beliefs are in the commit"] --> T["Timing<br/>decided after the commit"]
+    end
+
+    subgraph S2["2 · The snapshot"]
+        direction LR
+        C["Commit ID = sha256 of manifest<br/>+ Ed25519 signature"] --> D["Merkle root rebuilt<br/>from the beliefs"] --> E["History<br/>every parent signed + linked"]
+    end
+
+    subgraph S3["3 · Storage and chain"]
+        direction LR
+        F["Walrus<br/>manifest is stored"] --> G["Sui anchor via Tatum<br/>same root, public timestamp"]
+    end
+
+    T --> C
+    E --> F
+    G --> OK(["VALID<br/>this decision used exactly this memory"])
+
+    classDef ok fill:#b6f25c,stroke:#0a0a09,color:#0a0a09,font-weight:bold
+    classDef chk fill:#ffffff,stroke:#555,color:#0a0a09
+    class OK ok
+    class A,B,T,C,D,E,F,G chk
+```
+
+### 5. Linking an agent to the dashboard
+
+Works like `gh auth login`: a one-time code, approved with the owner's wallet.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CLI as engram CLI
+    participant API as Engram API
+    participant B as Owner's browser
+    participant WL as Sui wallet
+
+    CLI->>API: POST /api/link/start (agent name, public key)
+    API-->>CLI: code K7QF-29XM + approval URL
+    CLI->>B: owner opens /link?code=K7QF-29XM
+    B->>WL: sign the free sign-in message
+    WL-->>B: signature
+    B->>API: POST /api/link/decide (approve, signed-in wallet)
+    CLI->>API: GET /api/link/poll
+    API-->>CLI: link token (bound to wallet + agent key)
+    CLI->>API: POST /api/link/sync (commits, beliefs, receipts)
+    API->>API: re-verify signatures, roots, Walrus, Sui
+    API-->>CLI: synced, verified
+    Note over CLI,WL: Later commits sync automatically.<br/>Raw episodes and keys never leave the machine.
+```
+
+### 6. Data model
+
+```mermaid
+classDiagram
+    direction LR
+    class Episode {
+        id: ep_…
+        source: user | tool | tatum | agent
+        keyId: own AES-256-GCM key
+        contentHash: sha256
+        blobId: Walrus blob
+    }
+    class Belief {
+        id: b_…
+        version: n
+        statement
+        confidence: 0..1
+        evidence: episode IDs
+        status: active | revised | retracted
+    }
+    class Commit {
+        id: sha256 of manifest
+        parent: commit ID
+        merkleRoot
+        beliefs: id@version
+        tombstones: episode IDs
+        signature: Ed25519
+        manifestBlobId
+        anchor: Sui tx + checkpoint
+    }
+    class Receipt {
+        id: r_…
+        action
+        inputHash
+        beliefs used
+        proofs: Merkle
+        commitId
+        signature: Ed25519
+    }
+    Episode "many" --> "1..many" Belief : evidence for
+    Belief "many" --> "1" Commit : snapshotted in
+    Commit --> Commit : parent
+    Receipt --> Commit : proven against
+    Receipt --> Belief : used
+```
+
+### 7. History and forgetting
+
+Commits form a hash-linked chain, like git. Forgetting doesn't rewrite history: it adds a
+tombstone to the next commit, so old receipts still verify. The first four commits are the
+real demo history; the last one shows what a `forget` would add.
+
+```mermaid
+gitGraph
+    commit id: "d0f7d31f Month 1"
+    commit id: "38ac2ca8 Months 2-3"
+    commit id: "19040b51 Month 4"
+    commit id: "2fd1a1c6 Month 5"
+    commit id: "example: forget" type: HIGHLIGHT
+```
+
+```mermaid
+flowchart LR
+    F["engram forget ep_…"] --> K["Destroy that episode's<br/>AES key in the vault"]
+    K --> X["Ciphertext on Walrus<br/>can never be decrypted"]
+    K --> RT["Retract beliefs that<br/>relied only on it"]
+    RT --> TB["Next commit records<br/>a tombstone"]
+    TB --> V["Old receipts still verify:<br/>history grows, never rewritten"]
+```
 
 ---
 

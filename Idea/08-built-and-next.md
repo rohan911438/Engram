@@ -4,16 +4,16 @@
 
 | Area | Status |
 |---|---|
-| SDK: episodes, consolidation, beliefs, commits, receipts, verify, forget | ✅ |
-| CLI: `init` · `observe` · `sleep` · `commit` · `log` · `diff` · `checkout` · `blame` · `bisect` · `verify` · `forget` · `export`/`audit` · `link`/`sync` · `ui` · `mcp` | ✅ published on npm |
-| `decide` command for CLI receipts | ✅ in the repo, next npm release |
-| MCP server (10 tools) | ✅ |
-| Move module `engram_anchor`, Merkle root as a public Sui event | ✅ live on Sui Testnet |
-| Tatum Sui gRPC gateway for chain reads | ✅ |
-| Money-ops example agent on real wallet transactions | ✅ |
-| Web app: wallet sign-in, hosted agent, linked agents, live verify, public demo, docs | ✅ live |
-| Per-user Walrus Memory accounts from the browser | ✅ |
-| Tests: SDK 62 · CLI 10 · money-ops 6 · server 20 | ✅ all passing |
+| SDK: episodes, consolidation, beliefs, commits, receipts, verify, forget | Done |
+| CLI: `init` · `observe` · `sleep` · `commit` · `log` · `diff` · `checkout` · `blame` · `bisect` · `verify` · `forget` · `export`/`audit` · `link`/`sync` · `ui` · `mcp` | Done, published on npm |
+| `decide` command for CLI receipts | Done, in the repo, next npm release |
+| MCP server (10 tools) | Done |
+| Move module `engram_anchor`, Merkle root as a public Sui event | Done, live on Sui Testnet |
+| Tatum Sui gRPC gateway for chain reads | Done |
+| Money-ops example agent on real wallet transactions | Done |
+| Web app: wallet sign-in, hosted agent, linked agents, live verify, public demo, docs | Done, live |
+| Per-user Walrus Memory accounts from the browser | Done |
+| Tests: SDK 62 · CLI 10 · money-ops 6 · server 20 | Done, all passing |
 
 ## Next (Nov 2026 → Q1 2027)
 
