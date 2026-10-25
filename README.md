@@ -1,95 +1,265 @@
-# Engram
+# Engram: Git for Agent Memory
 
-**Git for agent memory.** Engram gives AI agents memory that *learns*, has *history*, can be
-*proven*, and can be *forgotten* — built on [Walrus Memory](https://docs.wal.app/walrus-memory/getting-started/what-is-walrus-memory.md),
-with every snapshot anchored on Sui and verified through [Tatum](https://tatum.io)'s Sui gRPC gateway.
+> **Every belief traceable. Every decision provable. Every memory forgettable.**
 
-> Built for the Tatum × Walrus **Total Recall** hackathon (Track 02 — Smart Agents).
+Engram gives AI agents a memory that **learns**, keeps its **history**, can be **proven**, and
+can be **forgotten**. It is built on [Walrus Memory](https://docs.wal.app/walrus-memory/getting-started/what-is-walrus-memory.md),
+with every snapshot anchored on **Sui** and every chain read going through **[Tatum](https://tatum.io)**'s Sui gRPC gateway.
 
-**Live demo:** [engram-blond.vercel.app](https://engram-blond.vercel.app) · API: [engram-api-ohae.onrender.com](https://engram-api-ohae.onrender.com)
+Built for the Tatum × Walrus **Total Recall** hackathon, Track 02: *Smart Agents for Real Life*.
 
-```
-$ engram blame b_monthly_rent
-b_monthly_rent@3  0.97  The user pays 500 USDC for rent to 0x7a11d10d…0000 on the 1st of every month.
-  why: The user confirmed their rent increased to 500 USDC starting October.
-  ← ep_7a76e402d4fd  2026-07-01  tatum: sent 450 USDC to 0x7a11d10d…
-  ← ep_5b76245ee504  2026-07-26  user: "The 450 USDC to 0x7a11… is my rent, paid on the 1st…"
-  ← ep_8e7d09586449  2026-10-01  user: "Yes, my rent went up to 500 USDC from October."
-      blob kgx4O2JNHzVSrt3Jy4b5cPvTvLw_PrxkNqL4-NvYB7o
-
-$ engram verify r_787dace2681385b7
-  ✔ receipt signature      "ALERT[critical]: sent 250 USDC to 0x9bad00…" signed by the agent
-  ✔ belief proofs          1 belief(s) proven to be in commit 31f306ab
-  ✔ commit merkle root     5 beliefs + 0 tombstones → root 247af2230b10…
-  ✔ commit walrus          manifest recalled from Walrus Memory
-  ✔ commit sui anchor      Walrus Blob 0x8c61ff…2009 certified, tx 7RphhZRs… in checkpoint 336516038
-VALID — this memory is exactly what was committed, signed and anchored.
-```
-
-## Why
-
-Agents now remember things, but their memory is a black box that only grows:
-
-| Problem | Engram's answer |
+| | |
 |---|---|
-| Memories pile up as loose text; nothing turns them into knowledge | **`sleep`** consolidates raw *episodes* into versioned *beliefs* with confidence, evidence and a reason — and revises them when new evidence contradicts them |
-| Nobody can tell what the agent "knew" last week, or which memory caused a bad decision | **`log` · `diff` · `checkout` · `blame` · `bisect`** over the agent's mind |
-| An agent moves money — there's no tamper-proof record of *why* | Every decision gets a **signed receipt** with Merkle proofs into a **commit anchored on Sui**; **`verify`** checks it end to end via Tatum |
-| Walrus is permanent; privacy rules need forgetting | **`forget`** crypto-shreds one memory (its own key is destroyed) and records a tombstone in the next commit |
+| 🌐 **Live app** | https://engram-blond.vercel.app |
+| 🔎 **Live demo agent** (no wallet needed) | https://engram-blond.vercel.app/demo |
+| 📖 **Docs** | https://engram-blond.vercel.app/docs |
+| 📦 **CLI** | [`@rohankumar4179/engram`](https://www.npmjs.com/package/@rohankumar4179/engram): `npx @rohankumar4179/engram` |
+| 📦 **SDK** | [`@rohankumar4179/engram-sdk`](https://www.npmjs.com/package/@rohankumar4179/engram-sdk): `npm i @rohankumar4179/engram-sdk` |
+| ⛓️ **Move contract** | [`engram_anchor`](#smart-contract-engram_anchor) on Sui Testnet |
+| 🧾 **On-chain evidence** | [16 memories on Walrus Mainnet + 4 anchored commits](#on-chain-evidence-verify-it-yourself) |
+
+---
+
+## Contents
+
+1. [Engram in one minute](#engram-in-one-minute)
+2. [Why Walrus](#why-walrus)
+3. [How it works: the workflow](#how-it-works-the-workflow)
+4. [Smart contract: `engram_anchor`](#smart-contract-engram_anchor)
+5. [On-chain evidence: verify it yourself](#on-chain-evidence-verify-it-yourself)
+6. [The demo agent: money-ops](#the-demo-agent-money-ops)
+7. [Use it: CLI](#use-it-cli) · [SDK](#use-it-sdk) · [MCP](#use-it-mcp) · [Web dashboard](#use-it-web-dashboard)
+8. [Under the hood](#under-the-hood)
+9. [Privacy, security and honest limits](#privacy-security-and-honest-limits)
+10. [Run, test and deploy](#run-test-and-deploy)
+
+---
+
+## Engram in one minute
+
+Agents now remember things. Once they do, new questions come up:
+
+| Question | Engram's answer |
+|---|---|
+| *How did it learn?* Memories pile up as text. | **`sleep`** turns raw *episodes* into versioned *beliefs* with confidence, evidence and a reason, and revises them when facts change |
+| *What did it know last week? Which memory caused this?* | **`log` · `diff` · `checkout` · `blame` · `bisect`** over the agent's mind |
+| *Why did it do that, and can I trust the record?* | Every decision gets a **signed receipt** with Merkle proofs into a **commit anchored on Sui**. **`verify`** checks it end to end. |
+| *Storage is permanent. How do we forget?* | **`forget`** destroys that one memory's key and records a **tombstone** in the next commit |
+
+> **Walrus Memory gives agents memory. Engram gives that memory history, proof and control.**
+
+---
+
+## Why Walrus
+
+Memory you want to **trust** shouldn't depend on trusting whoever runs the server.
+Engram needs four things from its storage, and the Walrus + Sui stack provides all four:
+
+| Engram needs… | Walrus / Sui provides… | How Engram uses it |
+|---|---|---|
+| Memory no single party can quietly change or delete | **Walrus**: decentralised storage across independent nodes | Episodes, beliefs, commit manifests and receipts all live on Walrus |
+| A stable ID to point at in proofs | Every Walrus blob has an ID, registered as a `Blob` object on **Sui** | Commits list each episode's blob ID; `blame` shows them; `verify` checks them |
+| Privacy: only the owner reads raw memories | **Walrus Memory** encrypts data for its owner (Seal) | Engram also encrypts each memory with its own key first, which is what makes provable forgetting possible |
+| A public clock, so history can't be backdated | **Sui** transactions and checkpoints | The `engram_anchor` contract puts each commit's Merkle root in a public event |
+
+And **Tatum** is how Engram reads the chain: Walrus Blob objects, anchor transactions, and
+the money-ops agent's wallet activity all come through Tatum's Sui gRPC gateway.
+
+> **Private memory, stored openly, that anyone can verify.**
+
+---
+
+## How it works: the workflow
+
+```
+            ┌──────────────────────────── ENGRAM (CLI · SDK · MCP) ───────────────────────────┐
+ wallet tx  │                                                                                 │
+ user chat ─┼─▶ 1 observe ──▶ episode (AES-256-GCM, own key) ──────────────▶ Walrus Memory   │
+ tool data  │                       │                                                         │
+            │                 2 sleep (LLM, grounded in episode IDs)                          │
+            │                       ▼                                                         │
+            │                 beliefs (versioned · confidence · evidence) ─────▶ Walrus Memory │
+            │                       │                                                         │
+            │                 3 commit: Merkle root → Ed25519-signed manifest ─▶ Walrus Memory │
+            │                       │                         └── engram_anchor::anchor ──▶ Sui │
+            │                       ▼                                                         │
+ decision ◀─┼── 4 decide / wrap: relevant beliefs in → signed receipt + Merkle proofs        │
+            │                                                                                 │
+            │   5 verify: signature → proofs → root → history → Walrus → Sui (via Tatum)     │
+            │   6 link / sync ──▶ Engram web app (re-verified by the server, read-only)      │
+            └─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+| Step | Command | What happens |
+|---|---|---|
+| 1 | `observe` | Records an episode, encrypted with a fresh AES-256-GCM key |
+| 2 | `sleep` | The LLM proposes new / revised / retracted beliefs. Each must cite real episode IDs, and the rest are rejected. |
+| 3 | `commit` | Pushes to Walrus Memory, builds the Merkle root, signs the manifest, stores it on Walrus, anchors it on Sui |
+| 4 | `decide` / `mind.wrap()` | Gives the agent its relevant beliefs and writes a signed receipt naming the ones it used |
+| 5 | `verify` | Re-checks everything, down to the anchor on Sui |
+| 6 | `link` → `sync` | Shows the agent on your dashboard. Only commits, beliefs and receipts leave your machine. |
+
+Also: `diff` (what changed), `checkout` (memory at any commit or date), `blame` (evidence behind a
+belief), `bisect` (find where it learned something wrong), `forget` (provable forgetting).
+
+---
+
+## Smart contract: `engram_anchor`
+
+A small Move module that makes each commit's Merkle root **public on Sui**. It emits one event and
+creates no objects, so anchoring costs only gas.
+
+| | |
+|---|---|
+| Source | [`contracts/engram_anchor/sources/anchor.move`](contracts/engram_anchor/sources/anchor.move) |
+| Network | Sui **Testnet** |
+| Package ID | [`0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b`](https://suiscan.xyz/testnet/object/0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b) |
+| Entry function | `engram_anchor::anchor::anchor(agent_pubkey, commit_id, merkle_root, parent, manifest_blob, clock)` |
+| Event | `Anchored { sender, agent_pubkey, commit_id, merkle_root, parent, manifest_blob, timestamp_ms }` |
+| Checks | `commit_id` and `merkle_root` must be 32 bytes; `parent` is empty or 32 bytes |
+
+`verify` reads the event back (Mainnet through Tatum, Testnet through the public Sui node) and
+compares the commit ID, Merkle root and agent key with the local commit.
+Deploy your own copy with `npx tsx packages/sdk/scripts/publish-anchor.ts testnet|mainnet`.
+
+---
+
+## On-chain evidence: verify it yourself
+
+Everything below comes from the public demo agent ([live](https://engram-blond.vercel.app/demo)),
+a wallet-watching agent that ran on **real transfers**. Every link was checked before publishing:
+all 20 blobs answer `200` on the Walrus Mainnet aggregator, and all 4 anchor transactions are
+`SUCCESS` on Sui Testnet.
+
+### 16 memories stored on Walrus Mainnet
+
+Each memory is encrypted, so the explorer shows that the blob exists, not what it says.
+
+| # | Episode | Source | What the agent saw | Walrus blob |
+|---|---|---|---|---|
+| 1 | `ep_cc0d45adf1f1` | wallet | received 0.21 SUI (salary) | [VxuTjRq1…](https://walruscan.com/mainnet/blob/VxuTjRq1omsMDxPAkhERZfWu316fFf9WyU7cdB_7FI8) |
+| 2 | `ep_0cb78befdd56` | wallet | sent 0.045 SUI (rent) | [1NMnZMpH…](https://walruscan.com/mainnet/blob/1NMnZMpHMg3Sk62YxDLoEqNIdDmJ6GG0peiH7UP8YNw) |
+| 3 | `ep_01f7d6c29733` | wallet | sent 0.0012 SUI (subscription) | [Ir81SYv_…](https://walruscan.com/mainnet/blob/Ir81SYv_07But9A-pL3FlAHDKvjLmYP3lRF1XSAxDbg) |
+| 4 | `ep_13b73f5ef8cd` | owner | owner explains the payments | [CzNO7jdU…](https://walruscan.com/mainnet/blob/CzNO7jdUWjJFUhckgQyk1VsGQ3ChWfYuKHtf7uLFj6E) |
+| 5 | `ep_af9413395324` | wallet | received 0.21 SUI (salary) | [CzSavpsI…](https://walruscan.com/mainnet/blob/CzSavpsIOVqw1IIJWDel05Zu0VI555VAah7iYnyBCa4) |
+| 6 | `ep_82aab6fd6729` | wallet | sent 0.045 SUI (rent) | [h-rc9I_z…](https://walruscan.com/mainnet/blob/h-rc9I_zt94LAjhelrp2jF-yx9HQI2mcHBk9rIQa2yo) |
+| 7 | `ep_aad55edab554` | wallet | sent 0.0012 SUI (subscription) | [343C4Ofi…](https://walruscan.com/mainnet/blob/343C4Ofi66OCgcPFPXBUcAvf8LiMeNiluN-okDRLEPY) |
+| 8 | `ep_d9dec06e5d38` | wallet | received 0.21 SUI (salary) | [5xWXlpX5…](https://walruscan.com/mainnet/blob/5xWXlpX5bmuYbOZzCbsrt6RpDOHLJeiFLiRWqxIkgLg) |
+| 9 | `ep_53641e89c8dd` | wallet | sent 0.045 SUI (rent) | [oodGFYPP…](https://walruscan.com/mainnet/blob/oodGFYPPj-YZ1aJl2smMsP_NbJ_EE6eYRoW0GtqTE6E) |
+| 10 | `ep_1beabf33f70b` | wallet | sent 0.0012 SUI (subscription) | [kBAbky77…](https://walruscan.com/mainnet/blob/kBAbky77FwoyFj6ARskJEurjKMd3SgvOB3Lc4Z1jibk) |
+| 11 | `ep_ae891c285fa0` | wallet | sent 0.05 SUI (rent went up) | [nZGOp4Ps…](https://walruscan.com/mainnet/blob/nZGOp4PsgXIgmcFEuLXbwLiKdoBQzfavwqbmj0jDN6g) |
+| 12 | `ep_d294c4555005` | owner | owner confirms the rent rise | [K-3IQ5g-…](https://walruscan.com/mainnet/blob/K-3IQ5g-JcA693N9yyYz2VBBIYjAwkIsYbmNLwuV3Y8) |
+| 13 | `ep_ea7c580e0aca` | wallet | sent 0.18 SUI to an unknown address | [dIdDTSWq…](https://walruscan.com/mainnet/blob/dIdDTSWqtYfvVoO_7vlJRoPlGYk4qHOROD_9W5vtn80) |
+| 14 | `ep_3dfd7c7c2de8` | owner | "that's a scammer" | [EMM5aLlV…](https://walruscan.com/mainnet/blob/EMM5aLlVfmzP9nl6ENgqY02lHBQ3sYTZ0CbaNJ00DnI) |
+| 15 | `ep_1acc5a79f8b3` | wallet | sent 0.05 SUI (new rent) | [KnJepE5e…](https://walruscan.com/mainnet/blob/KnJepE5ekRIabA0nHctrMwD61eoR7ju_XLgnXWi1HH0) |
+| 16 | `ep_f66b0d7b5c00` | wallet | sent 0.025 SUI to the scammer → **CRITICAL alert** | [FC-92hYt…](https://walruscan.com/mainnet/blob/FC-92hYt6rX2P8oJy-pvKRMbOAW0g3V2DranpmQx-Ss) |
+
+### 4 commits: manifest on Walrus, Merkle root anchored on Sui
+
+| Commit | Message | Manifest on Walrus | `Anchored` tx on Sui Testnet | Checkpoint |
+|---|---|---|---|---|
+| `d0f7d31f` | Month 1: salary, rent, subscription | [qJnLv3IR…](https://walruscan.com/mainnet/blob/qJnLv3IRt9JkxLLShObFWaGxj6FT3ID2acRwX374x2U) | [GRNWPaGF…](https://suiscan.xyz/testnet/tx/GRNWPaGFF4H5gAtKiGV8c6TRdiTHX4roNUeRQWVWa6Xt) | 397,920,256 |
+| `38ac2ca8` | Months 2–3: habits confirmed | [PAzxBnKi…](https://walruscan.com/mainnet/blob/PAzxBnKinLL60UemEVHu8Kc79mpu-irOd-pyJ_LJZso) | [fJFh8kVe…](https://suiscan.xyz/testnet/tx/fJFh8kVer4VNWYyKqVns974Mk2Xf35d4oS6XDr8getE) | 397,921,635 |
+| `19040b51` | Month 4: rent change + scam address | [YI30MCNa…](https://walruscan.com/mainnet/blob/YI30MCNaOGF-IrJmHcI_dIFdGuHj0YstRQmdW8oEVtM) | [BPFs7Eqa…](https://suiscan.xyz/testnet/tx/BPFs7EqazA9nxUtr5rGnjcAJb4eUqxsNTUcA2L5aT4yx) | 397,926,925 |
+| `2fd1a1c6` | Month 5: applying what it learned | [SmglWW_s…](https://walruscan.com/mainnet/blob/SmglWW_swvwclEXSYpUsrPJGICPPprw91mjP8JXU8-0) | [ArLtGfg5…](https://suiscan.xyz/testnet/tx/ArLtGfg5ChjDFJHrAZzgWiqv2WMrDjhG1tfin868Z1vb) | 397,927,899 |
+
+### One decision, proven end to end
+
+Receipt **`r_5080ccb4fd9c3869`**: the agent's CRITICAL alert when the owner's wallet paid the scammer.
+Live result from the server (also the **Verify** button at [/demo → Receipts](https://engram-blond.vercel.app/demo/receipts)):
+
+```
+✔ receipt signature    "ALERT[critical]: sent 0.025 SUI to 0xcbed89… — Outgoing transfer detected
+                        to a known scam address representing theft." signed by the agent
+✔ belief proofs        2 belief(s) proven to be in commit 19040b51
+✔ timing               decision made after its commit
+✔ commit id            sha256 of the manifest matches the commit ID
+✔ commit signature     Ed25519 by agent 0e648084a79c…
+✔ commit merkle root   5 beliefs + 0 tombstones → root 392bf9cbb518…
+✔ commit history       2 earlier commit(s), all signed and hash-linked
+✔ commit walrus        manifest recalled from Walrus Memory, blob YI30MCNaOG…
+✔ commit sui anchor    Anchored event: root 392bf9cbb5… public in checkpoint 397926925 (testnet)
+✔ commit anchored at   2026-10-22T14:35:05.365Z
+VALID
+```
+
+### Check it without trusting us
+
+```bash
+# 1. A memory blob is stored on Walrus Mainnet (HTTP 200; the content is encrypted)
+curl -I https://aggregator.walrus-mainnet.walrus.space/v1/blobs/FC-92hYt6rX2P8oJy-pvKRMbOAW0g3V2DranpmQx-Ss
+
+# 2. The Merkle root of commit 19040b51 is public on Sui (base64 of 392bf9cb…)
+curl -s https://graphql.testnet.sui.io/graphql -H 'content-type: application/json' \
+  -d '{"query":"{ transaction(digest: \"BPFs7EqazA9nxUtr5rGnjcAJb4eUqxsNTUcA2L5aT4yx\") { effects { events { nodes { contents { json } } } } } }"}'
+
+# 3. The full proof check, through the live API
+curl -s https://engram-blond.vercel.app/api/demo/verify/r_5080ccb4fd9c3869
+```
+
+---
 
 ## The demo agent: money-ops
 
 `examples/money-ops` watches a Sui wallet, learns its owner's habits, and decides whether each
 movement deserves an alert. Every decision is a signed receipt.
 
-**The demo story uses real transactions.** `money-ops live` creates five wallets (owner, employer,
+**The story uses real transactions.** `money-ops live` creates five wallets (owner, employer,
 landlord, streaming service, scammer) and sends real SUI between them: salary in, rent and a
 subscription out, a rent rise, and a staged theft. The agent never sees the script. It reads
-the owner's wallet from the chain like any other wallet (Tatum on Mainnet, the public Sui node on
-Testnet, because Tatum has no Sui Testnet).
+the owner's wallet from the chain like any other wallet.
 
-| Phase | What happens on chain | Agent |
+| Phase | On chain | What the agent does |
 |---|---|---|
 | Month 1 | Salary in; rent and subscription out. The owner explains them | 3 / 3 alerted, then learns 3 beliefs |
 | Months 2–3 | The same six transfers again | **0 / 6 alerted**; each receipt cites the belief it used |
 | Month 4 | Rent rises; 0.18 SUI goes to an unknown address. The owner: "that's a scammer" | Revises rent, learns the scam address |
-| Month 5 | New rent; another payment to the scammer | Quiet on rent, catches the scammer from memory |
+| Month 5 | New rent; another payment to the scammer | Quiet on rent, **CRITICAL** on the scammer, from memory |
 
 ```bash
 pnpm --filter @engram/money-ops live --network testnet --fund-from-env   # real transfers on Testnet
-pnpm --filter @engram/money-ops live --network mainnet                   # same on Mainnet (fund the employer first)
+pnpm --filter @engram/money-ops live --network mainnet                   # same on Mainnet
 pnpm --filter @engram/money-ops watch 0x<address>                        # any real wallet, live via Tatum
-pnpm --filter @engram/money-ops replay --offline                         # scripted version, no chain (for tests)
+pnpm --filter @engram/money-ops replay --offline                         # scripted, no chain (tests)
 ```
 
 The theft is staged (the owner's own key signs it), but it is an ordinary on-chain transfer.
-Amounts are small: the whole story moves about 0.75 SUI.
+The whole story moves about 0.75 SUI.
 
-## Quick start
+---
 
-From npm:
+## Use it: CLI
 
-```bash
-npx @rohankumar4179/engram init my-agent        # CLI
-npm i @rohankumar4179/engram-sdk                # SDK
-```
-
-From source:
+Needs Node 20+ and a `.env` with your keys (see [Configuration](https://engram-blond.vercel.app/docs#configuration)).
+On Windows PowerShell, use `npx.cmd`.
 
 ```bash
-pnpm install && pnpm build
-cp .env.example .env            # Walrus Memory, Tatum, Gemini keys
-
-alias engram="node $(pwd)/packages/cli/dist/main.js"
-engram init my-agent
-engram observe -s user "I pay 450 USDC rent to 0x7a11 on the 1st"
-engram sleep                    # episodes → beliefs (LLM)
-engram commit -m "first week"   # Merkle root → signed → Walrus → Sui anchor
-engram log
-engram ui                       # the inspector
+npx @rohankumar4179/engram init my-agent
+npx @rohankumar4179/engram observe "I pay 450 USDC rent to 0x7a11 on the 1st"
+npx @rohankumar4179/engram sleep                   # episodes → beliefs
+npx @rohankumar4179/engram commit -m "first week"  # signed → Walrus → Sui
+npx @rohankumar4179/engram verify                  # ✔ … VALID
 ```
 
-### SDK
+| Command | What it does |
+|---|---|
+| `init <agent>` | Creates `.engram/`: Ed25519 agent key, key vault, Walrus Memory namespaces; checks Tatum |
+| `observe [data]` | Records an episode, encrypted with its own AES-256-GCM key (`-s` source, `-m` summary, `-f` file) |
+| `sleep` | LLM consolidation: create / revise / retract beliefs, grounded in episode IDs |
+| `commit -m <msg>` | Walrus Memory push → Merkle root → signed manifest on Walrus → Sui anchor |
+| `decide <action> -u <belief…>` | Signed decision receipt with Merkle proofs *(in the repo; next npm release)* |
+| `status` · `beliefs` · `receipts` | Where the agent is now |
+| `log` · `diff` · `checkout` | History, belief diffs, the memory at any commit, `HEAD~n` or date |
+| `blame <belief>` | The episodes (with Walrus blob IDs) and version history behind a belief |
+| `bisect <good> <bad>` | Binary search for the commit that broke the agent (`--grep` or `--ask`) |
+| `verify [r_…\|commit]` | Full proof check: signatures, Merkle proofs, hash chain, Walrus, Sui |
+| `forget <episode>` | Destroys the key, retracts what depended on it, tombstones the next commit |
+| `export --audit` · `audit <file>` | A bundle anyone can verify without the repo, including Sui anchors |
+| `link` · `sync` · `unlink` | Connect to the web dashboard with your Sui wallet |
+| `ui` | Local inspector: belief graph with time slider, history, receipts, live verify |
+| `mcp` | Run as an MCP server |
+
+## Use it: SDK
 
 ```ts
 import { engram } from "@rohankumar4179/engram-sdk";
@@ -105,154 +275,135 @@ agent.lastReceipt;                                 // r_… with Merkle proofs i
 
 mind.observe({ source: "tatum", data: tx });       // encrypted episode
 await mind.sleep();                                // consolidate → beliefs
-await mind.commit("weekly");                       // prove
-await mind.beliefs({ about: "rent" });             // query
+await mind.commit("weekly");                       // prove (+ dashboard sync if linked)
+await mind.beliefs({ about: "rent" });             // Walrus Memory semantic recall
 mind.at("2026-10-01");                             // time travel
 mind.forget("ep_…");                               // provable forgetting
 await mind.verify(agent.lastReceipt!.id);          // signature → proofs → Walrus → Sui
+
+// Link to the dashboard from code
+await mind.link({ server: "https://engram-blond.vercel.app", onCode: ({ url, code }) => console.log(code, url) });
 ```
 
-### Link a CLI / SDK agent to the web app
+## Use it: MCP
+
+For Claude Code, Cursor and Claude Desktop:
+
+```json
+{ "mcpServers": { "engram": { "command": "npx", "args": ["@rohankumar4179/engram", "mcp", "-C", "/path/to/agent"] } } }
+```
+
+| Tool | Does |
+|---|---|
+| `engram_remember` | Record an episode |
+| `engram_beliefs` | Beliefs by topic, or at a past commit |
+| `engram_sleep` · `engram_commit` | Learn and checkpoint |
+| `engram_log` · `engram_diff` · `engram_blame` | History and evidence |
+| `engram_forget` · `engram_verify` · `engram_status` | Forget, prove, inspect |
+
+## Use it: Web dashboard
+
+- **Sign in** with any Sui wallet. It's one free text signature, never a transaction.
+- **Your agent:** a hosted agent that reads your wallet through Tatum and learns from what you tell it.
+  It can move to **your own Walrus Memory account** with two wallet-signed transactions.
+- **Your agents:** CLI/SDK agents you linked:
 
 ```bash
-$ engram link --server https://engram-blond.vercel.app
+$ npx @rohankumar4179/engram link --server https://engram-blond.vercel.app
   Open https://engram-blond.vercel.app/link?code=K7QF-29XM
   and approve code K7QF-29XM with your Sui wallet.
 ✔ linked to wallet 0xfe2cfd89…7b46
 ✔ synced 2 commits and 0 receipts — verified by the server
 ```
 
-From then on every `engram commit` (or `mind.commit()` in the SDK, after `mind.link({...})`) syncs
-automatically, and the agent shows up under **Your agents** when you sign in with that wallet.
-Only the audit bundle is uploaded — commits, beliefs and signed receipts, never raw episodes or keys —
-and the server **re-verifies every sync** (signatures, Merkle roots, Sui anchors) before showing it.
-A link token only accepts bundles signed by that agent's key, and history can only grow.
-`engram sync` re-uploads; `engram unlink` forgets the link locally (remove it from the dashboard too).
+Every later commit syncs automatically. Only the audit bundle is uploaded (commits, beliefs,
+receipts), never raw episodes or keys. The server **re-verifies every sync** (signatures, Merkle
+roots, Sui anchors, manifests on Walrus) before showing it. A link token only accepts bundles
+signed by that agent's key, and history can only grow.
 
-### MCP (Claude Code, Cursor, Claude Desktop)
+---
 
-```json
-{ "mcpServers": { "engram": { "command": "npx", "args": ["@rohankumar4179/engram", "mcp", "-C", "/path/to/project"] } } }
-```
+## Under the hood
 
-Tools: `engram_status`, `engram_remember`, `engram_beliefs` (by topic or at a past commit),
-`engram_sleep`, `engram_commit`, `engram_log`, `engram_diff`, `engram_blame`, `engram_forget`,
-`engram_verify`.
-
-## Commands
-
-| Command | What it does |
-|---|---|
-| `engram init <agent>` | Creates `.engram/` — Ed25519 agent key, key vault, Walrus Memory namespaces; checks Tatum |
-| `engram observe` | Records an episode, encrypted with its own AES-256-GCM key |
-| `engram sleep` | Consolidation with the LLM: create / revise / retract beliefs, grounded in episode IDs |
-| `engram commit -m` | Push to Walrus Memory → Merkle root → signed manifest on Walrus → Sui anchor via Tatum |
-| `engram log` · `diff` · `checkout` | History, belief diffs, the memory at any commit or date |
-| `engram blame <belief>` | The episodes (with Walrus blob IDs) and version history behind a belief |
-| `engram bisect <good> <bad>` | Binary search for the commit that broke the agent (`--grep` or `--ask`) |
-| `engram verify [r_…\|commit]` | Full proof check: signatures, Merkle proofs, hash chain, Walrus, Sui |
-| `engram forget <episode>` | Destroys the episode's key, retracts what depended on it, tombstones the next commit |
-| `engram ui` | The inspector — belief graph with time slider, history, receipts, live verification |
-| `engram export --audit` · `engram audit <file>` | Audit bundle (commits, beliefs, receipts — no raw episodes) that anyone can verify without the repo, incl. Sui anchors |
-| `engram link` · `sync` · `unlink` | Link the agent to your web dashboard with your Sui wallet; commits sync automatically and are verified by the server |
-| `engram mcp` | MCP server: the commands above as tools for Claude Code, Cursor, Claude Desktop |
-
-## How it works
-
-```
- agent / wallet feed ──observe──▶ episodes (AES-256-GCM, one key each) ──push──▶ Walrus Memory
-                                     │                                        engram-<agent>-episodes
-                                   sleep (LLM, validated: no invented evidence)
-                                     ▼
-                                  beliefs (immutable versions + evidence + reason) ─▶ engram-<agent>-beliefs
-                                     │
-                                   commit ── Merkle root over belief leaves + tombstones
-                                     │       Ed25519-signed manifest, hash-linked to parent
-                                     ├──────▶ Walrus Memory (engram-<agent>-commits) ─▶ Sui Blob object
-                                     │                                                      ▲
- decision ──act──▶ receipt (signed, Merkle proofs into HEAD) ─▶ engram-<agent>-receipts     │
-                                                                                            │
- verify ── signature → proofs → root rebuild → parent chain → Walrus recall → Tatum Sui RPC ─┘
-```
-
-- **Leaves** commit to belief ID, version, statement hash, confidence, evidence root and tags;
-  domain-separated hashing (leaf `0x00`, node `0x01`).
-- **Anchoring:** every Walrus Memory write registers a Walrus `Blob` object on Sui owned by the
-  account owner. Engram finds the manifest's Blob object and its certifying transaction through
-  Tatum, and `verify` re-reads both (blob ID, certification, owner, checkpoint, time).
-- **Public anchoring (Move):** with `ENGRAM_ANCHOR_PACKAGE` set, every commit also calls
-  [`engram_anchor::anchor`](contracts/engram_anchor/sources/anchor.move), which emits an `Anchored`
-  event carrying the commit ID, Merkle root and agent key in the clear. `verify` re-reads the event
-  (mainnet through Tatum, testnet through the public Sui gRPC node) and compares all three.
-  Publish your own copy with `npx tsx packages/sdk/scripts/publish-anchor.ts testnet|mainnet`
-  (needs the `sui` CLI for the build and `SUI_MNEMONIC` with a little SUI). Testnet package:
-  `0xa1fccbb3e282e4ca09efbb2a46b3584d038fd154b9f9db36fc8d60d9051bf86b`.
-- **Tatum over gRPC:** Sui switched JSON-RPC off in July 2026, so every chain read (wallet feed,
-  Walrus Blob objects, anchor events) and every mainnet anchor transaction goes through Tatum's
-  Sui gRPC gateway (`sui-mainnet-grpc.gateway.tatum.io`) with native gRPC. The wallet feed uses one
+- **Merkle leaves** commit to belief ID, version, statement hash, confidence, evidence root and
+  tags, with domain-separated hashing (leaf `0x00`, node `0x01`). Tombstones are leaves too.
+- **Two anchors per commit.** (1) Every Walrus Memory write registers a Walrus `Blob` object on Sui;
+  Engram finds the manifest's Blob object and its certifying transaction through Tatum.
+  (2) The `engram_anchor` event puts the Merkle root itself on chain in the clear.
+- **Tatum over gRPC.** Sui switched JSON-RPC off in July 2026, so every Mainnet chain read
+  (wallet feed, Walrus Blob objects, anchor events) uses Tatum's Sui gRPC gateway
+  (`sui-mainnet-grpc.gateway.tatum.io`) with native gRPC. The wallet feed uses one
   `affectedAddress` query, so it sees money sent *and* received.
-- **Walrus Memory fallback:** if the relayer's server-side embedding fails (as it did on 22 Oct,
-  [MemWal#1285](https://github.com/MystenLabs/MemWal/issues/1285)), Engram switches to Walrus Memory's
-  manual mode: it embeds locally (Gemini, 1536 dims), Seal-encrypts with the account owner's key,
-  and the relayer only stores ciphertext + vector. Recall merges both paths, so `verify` keeps working.
-- **Consolidation safety:** LLM output is validated — evidence must be real episode IDs, edits must
-  target existing beliefs; rejected proposals get one repair round with the reason.
-- **Crypto-shredding:** episode keys are wrapped by a master key in `.engram/vault.json`;
-  `forget` deletes the wrapped key.
+- **Walrus Memory fallback.** If the relayer's server-side embedding fails (as on 22 Oct,
+  [MemWal#1285](https://github.com/MystenLabs/MemWal/issues/1285)), Engram switches to manual mode:
+  it embeds locally, Seal-encrypts with the owner's key, and the relayer stores only ciphertext +
+  vector. Recall merges both paths, so `verify` keeps working.
+- **Grounded consolidation.** Evidence must be real episode IDs, and edits must target existing
+  beliefs. Rejected proposals get one repair round with the reason.
+- **Dashboard verification without the owner's key.** The server can't read an owner's encrypted
+  manifest, so it confirms the blob on Walrus through the public aggregator and checks the
+  content through the Merkle root on Sui.
+- **Restart-safe sessions.** Sign-ins and link tokens are HMAC-signed, so they keep working after
+  the server restarts.
 
-More: [`docs/spike-findings.md`](docs/spike-findings.md) (what we measured on Walrus Memory and Tatum).
+```
+packages/sdk        @rohankumar4179/engram-sdk: core library
+packages/cli        @rohankumar4179/engram: CLI + MCP server
+apps/web            web app (React, Vite, Tailwind, shadcn/ui, React Flow, dapp-kit)
+apps/server         API server: wallet auth, hosted agents, link flow, live verify
+examples/money-ops  wallet-watching agent (Tatum feed, real-transaction story)
+contracts/          engram_anchor Move package
+docs/               spike findings, blog post, video script
+Idea/               product write-up for judges
+```
 
-## Deploy
+---
 
-**Frontend (Vercel)** — set the `VITE_API_URL` if deploying to a custom domain; otherwise the
-root `vercel.json` rewrites `/api/*` to the Render backend automatically.
+## Privacy, security and honest limits
+
+| Stays with the owner | Goes to Walrus | Goes to Sui | Goes to the dashboard |
+|---|---|---|---|
+| Agent key, key vault, decrypted memories | Encrypted episodes, beliefs, manifests, receipts | Blob certification, `Anchored` events | Commits, beliefs, receipts, re-verified |
+
+- Standard primitives only: SHA-256, Ed25519, AES-256-GCM, Merkle trees.
+- **Forgetting** makes an episode unreadable to anyone holding only the ciphertext. It can't
+  un-read copies already decrypted, and belief *summaries* that cited it stay in history,
+  marked as retracted.
+- **Manifests are Seal-encrypted** for the owner by Walrus Memory. Third parties confirm the blob on
+  Walrus and the content via the public Merkle root on Sui.
+- **The Move anchor runs on Sui Testnet** today. Walrus memories and Tatum reads are on Mainnet.
+- **Keys** (`agent.key`, `master.key`) live in `.engram/` on disk today; KMS or Seal is planned.
+
+---
+
+## Run, test and deploy
 
 ```bash
-vercel --prod   # from repo root
+pnpm install && pnpm build
+cp .env.example .env              # Walrus Memory, Tatum, Gemini keys
+pnpm -r test                      # SDK 62 · CLI 10 · money-ops 6 · server 20
+cd apps/server && npx tsx src/main.ts   # API + web app on http://localhost:8787
 ```
 
-**Backend (Render, Docker)** — the `render.yaml` at the repo root configures the service.
-Set these env vars in the Render dashboard (all marked `sync: false`):
+**Frontend (Vercel):** the root `vercel.json` builds `apps/web` and rewrites `/api/*` to the backend.
+
+**Backend (Render, Docker):** `render.yaml` + `Dockerfile`. Environment variables:
 
 | Var | What it is |
 |---|---|
 | `TATUM_API_KEY_MAINNET` | Tatum API key (Sui gRPC) |
-| `MEMWAL_KEY` | Walrus Memory account owner Ed25519 private key |
-| `MEMWAL_ACCOUNT_ID` | Walrus Memory account object ID |
-| `SUI_MNEMONIC` | 12-word mnemonic for the signing wallet |
-| `GEMINI_API_KEYS` | Comma-separated Gemini API keys |
-| `ENGRAM_ANCHOR_PACKAGE` | Move package ID of `engram_anchor` |
-| `ENGRAM_PUBLIC_URL` | Public URL of the web app users open (the Vercel site, e.g. `https://engram-blond.vercel.app`) — used for `/link?code=…` approval links |
+| `MEMWAL_KEY` · `MEMWAL_ACCOUNT_ID` | Walrus Memory account owner key and account object ID |
+| `SUI_MNEMONIC` | Wallet that pays gas for Move anchors |
+| `GEMINI_API_KEYS` · `GEMINI_MODEL` | LLM for `sleep` |
+| `ENGRAM_ANCHOR_PACKAGE` · `ENGRAM_ANCHOR_NETWORK` | `engram_anchor` package ID and network |
+| `ENGRAM_PUBLIC_URL` | Public URL of the web app, used for `/link?code=…` approval links |
+| `ENGRAM_SECRET` *(optional)* | Key for signing sessions and link tokens (otherwise derived from an existing secret) |
 
-The `apps/server/demo-agent/` directory is baked into the Docker image and loaded
-automatically as the read-only public demo.
-
-## Honest limits
-
-- **Forgetting** makes an episode unreadable to everyone holding only the ciphertext. It can't
-  un-read copies already decrypted, and the belief *summaries* that cited it stay in Walrus history
-  (they're retracted, not erased).
-- **Anchoring** (option A) proves *when* a manifest blob was certified on Sui and that the
-  account owner holds it. The manifest bytes on Walrus are Seal-encrypted by Walrus Memory, so the
-  content check goes through Walrus Memory recall. The optional Move anchor (above) puts the Merkle
-  root itself on chain, readable by anyone.
-- Keys (`agent.key`, `master.key`) live in `.engram/` on disk — fine for a hackathon, KMS/Seal later.
-
-## Repo layout
-
-```
-packages/sdk        @rohankumar4179/engram-sdk — core library (62+ tests)
-packages/cli        @rohankumar4179/engram CLI + MCP server
-apps/web            web inspector + hosted agent UI (React, shadcn/ui, React Flow)
-apps/server         Express API server (auth, jobs, agent tenants, link flow)
-examples/money-ops  wallet-watching agent (Tatum feed, replay story)
-contracts/          engram_anchor Move package (Sui testnet + mainnet)
-docs/               spike findings, blog post, video script
-```
+The `apps/server/demo-agent/` folder ships in the image as the read-only public demo (no keys inside).
 
 ## Built with
 
-Walrus Memory (`@mysten-incubation/memwal`) · Tatum Sui RPC · Sui · Gemini · `@noble/hashes`,
-`@noble/curves` · shadcn/ui · React Flow · Tailwind CSS.
+Walrus Memory (`@mysten-incubation/memwal`) · Tatum Sui gRPC · Sui + Move · Gemini ·
+`@noble/hashes`, `@noble/curves` · React, shadcn/ui, React Flow, Tailwind CSS.
 
 MIT licensed.
