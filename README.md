@@ -222,7 +222,7 @@ Set these env vars in the Render dashboard (all marked `sync: false`):
 | `SUI_MNEMONIC` | 12-word mnemonic for the signing wallet |
 | `GEMINI_API_KEYS` | Comma-separated Gemini API keys |
 | `ENGRAM_ANCHOR_PACKAGE` | Move package ID of `engram_anchor` |
-| `ENGRAM_PUBLIC_URL` | Public URL of this Render deployment |
+| `ENGRAM_PUBLIC_URL` | Public URL of the web app users open (the Vercel site, e.g. `https://engram-blond.vercel.app`) — used for `/link?code=…` approval links |
 
 The `apps/server/demo-agent/` directory is baked into the Docker image and loaded
 automatically as the read-only public demo.

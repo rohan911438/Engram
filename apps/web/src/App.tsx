@@ -11,6 +11,7 @@ const DashboardPage = lazy(() => import("@/pages/dashboard").then((m) => ({ defa
 const MemoryPage = lazy(() => import("@/pages/memory").then((m) => ({ default: m.MemoryPage })));
 const HistoryView = lazy(() => import("@/views/history").then((m) => ({ default: m.HistoryView })));
 const MindView = lazy(() => import("@/views/mind").then((m) => ({ default: m.MindView })));
+const DocsPage = lazy(() => import("@/pages/docs").then((m) => ({ default: m.DocsPage })));
 const LinkPage = lazy(() => import("@/pages/link").then((m) => ({ default: m.LinkPage })));
 const ReceiptsView = lazy(() => import("@/views/receipts").then((m) => ({ default: m.ReceiptsView })));
 
@@ -69,6 +70,7 @@ export default function App() {
     <TooltipProvider>
       <Routes>
         <Route path="/" element={<Suspense fallback={<div className="min-h-svh bg-background" />}><HomePage /></Suspense>} />
+        <Route path="/docs" element={<Suspense fallback={<div className="min-h-svh bg-background" />}><DocsPage /></Suspense>} />
         <Route path="/link" element={<Suspense fallback={<div className="min-h-svh bg-background" />}><LinkPage /></Suspense>} />
         <Route path="/app/linked/:id" element={<AppLayout kind="linked" />}>{agentRoutes()}</Route>
         <Route path="/app" element={<AppLayout kind="app" />}>{agentRoutes()}</Route>

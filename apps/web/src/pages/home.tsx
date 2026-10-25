@@ -67,6 +67,7 @@ function Nav() {
               <sup className="font-mono text-[9px] text-muted-foreground transition group-hover:text-brand">0{i + 1}</sup>
             </button>
           ))}
+          <Link to="/docs" className="rounded-full px-3 py-1.5 text-[14px] text-foreground/75 transition hover:text-foreground">Docs</Link>
         </nav>
         <div className="flex items-center gap-2">
           <a href={GITHUB} target="_blank" rel="noreferrer" className="hidden size-9 items-center justify-center rounded-full border border-border text-foreground/70 transition hover:border-foreground/30 hover:text-foreground sm:flex" aria-label="GitHub">
@@ -86,6 +87,10 @@ function Nav() {
               <span className="font-mono text-[11px] text-muted-foreground">0{i + 1}</span>
             </button>
           ))}
+          <Link to="/docs" className="flex w-full items-baseline justify-between border-b border-border py-4 text-left font-display text-2xl tracking-tight">
+            Docs
+            <span className="font-mono text-[11px] text-muted-foreground">↗</span>
+          </Link>
         </div>
       )}
     </header>
@@ -573,6 +578,9 @@ function Developers() {
           </div>
           <code className="max-w-full overflow-x-auto rounded-lg border border-border bg-background px-3 py-2 font-mono text-[12px] whitespace-nowrap text-foreground/85">npx @rohankumar4179/engram link --server {origin}</code>
         </div>
+        <Link to="/docs" className="group mt-4 inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-[14px] transition hover:border-brand hover:text-brand">
+          Read the integration docs <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
+        </Link>
       </BlurFade>
     </Section>
   );
@@ -600,9 +608,9 @@ function FinalCta() {
   );
 }
 
-const FOOTER_COLS: { title: string; links: { label: string; href: string; scroll?: boolean }[] }[] = [
+const FOOTER_COLS: { title: string; links: { label: string; href: string; scroll?: boolean; route?: boolean }[] }[] = [
   { title: "Product", links: [{ label: "How it works", href: "#how", scroll: true }, { label: "Features", href: "#features", scroll: true }, { label: "Proof", href: "#proof", scroll: true }, { label: "Demo agent", href: "#story", scroll: true }] },
-  { title: "Developers", links: [{ label: "CLI on npm", href: "https://www.npmjs.com/package/@rohankumar4179/engram" }, { label: "SDK on npm", href: "https://www.npmjs.com/package/@rohankumar4179/engram-sdk" }, { label: "Docs on GitHub", href: GITHUB }] },
+  { title: "Developers", links: [{ label: "CLI on npm", href: "https://www.npmjs.com/package/@rohankumar4179/engram" }, { label: "SDK on npm", href: "https://www.npmjs.com/package/@rohankumar4179/engram-sdk" }, { label: "Documentation", href: "/docs", route: true }, { label: "Source on GitHub", href: GITHUB }] },
   { title: "Built on", links: [{ label: "Walrus Memory", href: "https://docs.wal.app/walrus-memory/getting-started/what-is-walrus-memory.md" }, { label: "Tatum", href: "https://tatum.io" }, { label: "Sui", href: "https://sui.io" }] },
 ];
 
@@ -624,7 +632,9 @@ function Footer() {
               <ul className="mt-5 space-y-3 text-[15px]">
                 {col.links.map((l) => (
                   <li key={l.label}>
-                    {l.scroll ? (
+                    {l.route ? (
+                      <Link to={l.href} className="text-foreground/75 transition hover:text-brand">{l.label}</Link>
+                    ) : l.scroll ? (
                       <button type="button" onClick={() => go(l.href)} className="text-foreground/75 transition hover:text-brand">{l.label}</button>
                     ) : (
                       <a href={l.href} target="_blank" rel="noreferrer" className="text-foreground/75 transition hover:text-brand">{l.label} <span className="text-muted-foreground">↗</span></a>
