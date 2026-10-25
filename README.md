@@ -8,8 +8,14 @@ with every snapshot anchored on **Sui** and every chain read going through **[Ta
 
 Built for the Tatum × Walrus **Total Recall** hackathon, Track 02: *Smart Agents for Real Life*.
 
+[![Watch the Engram demo video](docs/blog/home.png)](https://drive.google.com/file/d/1FrONLRpjajndGVA5p4gFmyBfKeEy8jXw/view?usp=drivesdk)
+
+**[Watch the demo video](https://drive.google.com/file/d/1FrONLRpjajndGVA5p4gFmyBfKeEy8jXw/view?usp=drivesdk)** · **[Read the blog post](https://dev.to/roan911/your-ai-agent-remembers-everything-can-it-prove-any-of-it-51og)**
+
 | Resource | Link |
 |---|---|
+| Demo video | https://drive.google.com/file/d/1FrONLRpjajndGVA5p4gFmyBfKeEy8jXw/view?usp=drivesdk |
+| Blog post | https://dev.to/roan911/your-ai-agent-remembers-everything-can-it-prove-any-of-it-51og |
 | Live app | https://engram-blond.vercel.app |
 | Live demo agent (no wallet needed) | https://engram-blond.vercel.app/demo |
 | Documentation | https://engram-blond.vercel.app/docs |
