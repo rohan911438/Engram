@@ -1,5 +1,8 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { verifyPersonalMessageSignature } from "@mysten/sui/verify";
+import type { Signer } from "./secret.js";
+
+const SESSION_PREFIX = "s1_";
 
 /**
  * Wallet sign-in: the server hands out a one-time message, the wallet signs
@@ -10,8 +13,11 @@ import { verifyPersonalMessageSignature } from "@mysten/sui/verify";
 export class WalletAuth {
   private challenges = new Map<string, { address: string; message: string; expires: number }>();
   private sessions = new Map<string, { address: string; expires: number }>();
+  /** Signed-out session tokens (only until restart; tokens also expire on their own). */
+  private loggedOut = new Set<string>();
 
-  constructor(private opts: { ttlMs?: number; sessionMs?: number; now?: () => number } = {}) {}
+  /** With a `signer`, session tokens are signed and survive a server restart. */
+  constructor(private opts: { ttlMs?: number; sessionMs?: number; now?: () => number; signer?: Signer } = {}) {}
 
   private now() {
     return this.opts.now?.() ?? Date.now();
@@ -40,22 +46,34 @@ export class WalletAuth {
     this.challenges.delete(nonce); // one use only
     if (!c || c.expires < this.now()) throw new Error("sign-in request expired — try again");
     await verifyPersonalMessageSignature(new TextEncoder().encode(c.message), signature, { address: c.address });
+    const expires = this.now() + (this.opts.sessionMs ?? 7 * 24 * 3600_000);
+    if (this.opts.signer) {
+      const token = this.opts.signer.sign(SESSION_PREFIX, { a: c.address, e: expires, n: randomBytes(9).toString("base64url") });
+      return { token, address: c.address };
+    }
     const token = randomBytes(32).toString("base64url");
-    this.sessions.set(token, { address: c.address, expires: this.now() + (this.opts.sessionMs ?? 7 * 24 * 3600_000) });
+    this.sessions.set(token, { address: c.address, expires });
     return { token, address: c.address };
   }
 
   session(token: string | undefined): string | null {
     if (!token) return null;
     const s = this.sessions.get(token);
-    if (!s || s.expires < this.now()) return null;
-    return s.address;
+    if (s) return s.expires < this.now() ? null : s.address;
+    const signed = this.opts.signer?.open<{ a: string; e: number }>(SESSION_PREFIX, token);
+    if (!signed || typeof signed.a !== "string" || !(signed.e > this.now()) || !isSuiAddress(signed.a)) return null;
+    if (this.loggedOut.has(hash(token))) return null;
+    return normalize(signed.a);
   }
 
   logout(token: string | undefined) {
-    if (token) this.sessions.delete(token);
+    if (!token) return;
+    this.sessions.delete(token);
+    if (this.opts.signer?.open(SESSION_PREFIX, token)) this.loggedOut.add(hash(token));
   }
 }
+
+const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 
 export function isSuiAddress(a: string): boolean {
   return /^0x[0-9a-fA-F]{1,64}$/.test(a);

@@ -7,6 +7,7 @@ import type { Tenant, Tenants } from "./tenants.js";
 import { DEFAULT_LIMITS, RateLimiter, bucketFor, clientIp, probeHealth, type Health } from "./guard.js";
 import { lastLlmError } from "./tenants.js";
 import { LinkService } from "./links.js";
+import type { Signer } from "./secret.js";
 import { ForeignAnchorChecker } from "@rohankumar4179/engram-sdk";
 import { mainnetStorageChain, storageStatus, storageTx, useOwnStorage, type StorageChain } from "./storage.js";
 
@@ -45,6 +46,8 @@ export interface AppOptions {
   /** For GET /api/health. */
   walrusUrl?: string;
   llmConfigured?: boolean;
+  /** Signs session and link tokens so they survive restarts (see secret.ts). */
+  signer?: Signer;
 }
 
 /**
@@ -76,10 +79,10 @@ export interface AppOptions {
  *   GET  /api/linked/<id>/<view>        read-only views of a linked agent
  */
 export function createApp(o: AppOptions) {
-  const auth = o.auth ?? new WalletAuth();
+  const auth = o.auth ?? new WalletAuth({ signer: o.signer });
   const chain = o.storageChain ?? mainnetStorageChain();
   const limiter = new RateLimiter(o.limits ?? DEFAULT_LIMITS);
-  const links = o.links ?? new LinkService(o.linkDir ?? "data", new ForeignAnchorChecker(o.tatum));
+  const links = o.links ?? new LinkService(o.linkDir ?? "data", new ForeignAnchorChecker(o.tatum), o.signer);
   const baseUrl = (req: IncomingMessage) => {
     if (o.publicUrl) return o.publicUrl;
     const proto = o.trustProxy ? String(req.headers["x-forwarded-proto"] ?? "http").split(",")[0] : o.secureCookies ? "https" : "http";

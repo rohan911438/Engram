@@ -2,6 +2,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Engram, importAudit, verifyAudit, type Anchorer, type AuditBundle, type RemoteHit, type RemoteMemory } from "@rohankumar4179/engram-sdk";
+import type { Signer } from "./secret.js";
+
+/** Signed link tokens: checkable without links.json, so they survive a restart that wipes the disk. */
+const TOKEN_PREFIX = "eng2_";
+interface SignedLink { w: string; a: string; k: string; l: string; t: number }
 
 /**
  * Links local agents (CLI / SDK) to a wallet's dashboard.
@@ -70,14 +75,20 @@ export class LinkService {
   private tokensPath: string;
   private tokens: Record<string, TokenRecord>; // sha256(token) → record
   private engrams = new Map<string, { mtime: number; engram: Engram }>();
+  private revokedPath: string;
+  /** "wallet/agentId" → time of unlink: signed tokens issued before it are refused. */
+  private revoked: Record<string, number>;
 
   constructor(
     private dataDir: string,
     private anchorer?: Anchorer,
+    private signer?: Signer,
   ) {
     mkdirSync(dataDir, { recursive: true });
     this.tokensPath = join(dataDir, "links.json");
     this.tokens = existsSync(this.tokensPath) ? (JSON.parse(readFileSync(this.tokensPath, "utf8")) as Record<string, TokenRecord>) : {};
+    this.revokedPath = join(dataDir, "links-revoked.json");
+    this.revoked = existsSync(this.revokedPath) ? (JSON.parse(readFileSync(this.revokedPath, "utf8")) as Record<string, number>) : {};
   }
 
   private saveTokens() {
@@ -129,8 +140,11 @@ export class LinkService {
       p.status = "denied";
       return { status: p.status };
     }
-    const token = `eng_${randomBytes(32).toString("base64url")}`;
-    this.tokens[sha(token)] = { wallet, agent: p.agent, agentPubKey: p.agentPubKey, label: p.label, createdAt: Date.now() };
+    const createdAt = Date.now();
+    const token = this.signer
+      ? this.signer.sign(TOKEN_PREFIX, { w: wallet, a: p.agent, k: p.agentPubKey, l: p.label, t: createdAt } satisfies SignedLink)
+      : `eng_${randomBytes(32).toString("base64url")}`;
+    this.tokens[sha(token)] = { wallet, agent: p.agent, agentPubKey: p.agentPubKey, label: p.label, createdAt };
     this.saveTokens();
     p.status = "approved";
     p.wallet = wallet;
@@ -157,7 +171,17 @@ export class LinkService {
 
   authenticate(header: string | undefined): TokenRecord & { tokenHash: string } {
     const token = /^Bearer\s+(\S+)$/i.exec(header ?? "")?.[1];
-    const rec = token ? this.tokens[sha(token)] : undefined;
+    let rec = token ? this.tokens[sha(token)] : undefined;
+    if (token && !rec) {
+      // Not on file (e.g. the server restarted on a wiped disk): a valid signed token still works,
+      // and is put back on file so the agent shows up on the dashboard again.
+      const s = this.signer?.open<SignedLink>(TOKEN_PREFIX, token);
+      if (s && typeof s.w === "string" && AGENT_RE.test(s.a) && /^[0-9a-f]{64}$/.test(s.k) && s.t > (this.revoked[`${s.w}/${s.k.slice(0, 16)}`] ?? 0)) {
+        rec = { wallet: s.w, agent: s.a, agentPubKey: s.k, label: String(s.l ?? s.a).slice(0, 60), createdAt: s.t };
+        this.tokens[sha(token)] = rec;
+        this.saveTokens();
+      }
+    }
     if (!token || !rec) throw Object.assign(new Error("invalid or revoked link token — run `engram link` again"), { status: 401 });
     return { ...rec, tokenHash: sha(token) };
   }
@@ -231,6 +255,7 @@ export class LinkService {
 
   /** Revokes every token for this agent and deletes its synced copy. */
   unlink(wallet: string, id: string): boolean {
+    const dir = this.dir(wallet, id); // validates id
     let found = false;
     for (const [h, r] of Object.entries(this.tokens)) {
       if (r.wallet === wallet && r.agentPubKey.startsWith(id)) {
@@ -238,8 +263,11 @@ export class LinkService {
         found = true;
       }
     }
+    // Also blocks signed tokens that aren't on file any more.
+    this.revoked[`${wallet}/${id}`] = Date.now();
     this.saveTokens();
-    rmSync(this.dir(wallet, id), { recursive: true, force: true });
+    writeFileSync(this.revokedPath, JSON.stringify(this.revoked), { mode: 0o600 });
+    rmSync(dir, { recursive: true, force: true });
     this.engrams.delete(`${wallet}/${id}`);
     return found;
   }
