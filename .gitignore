@@ -21,3 +21,11 @@ contracts/*/build/
 !apps/server/demo-agent/.engram/**
 
 .vercel
+
+# personal launch notes (not for judges)
+Tweet.md
+pitch.md
+*pitch*.md
+*voiceover*
+*voice-over*
+docs/video-script.md

@@ -586,7 +586,7 @@ apps/web            web app (React, Vite, Tailwind, shadcn/ui, React Flow, dapp-
 apps/server         API server: wallet auth, hosted agents, link flow, live verify
 examples/money-ops  wallet-watching agent (Tatum feed, real-transaction story)
 contracts/          engram_anchor Move package
-docs/               spike findings, blog post, video script
+docs/               spike findings, blog post, demo screenshots
 Idea/               product write-up for judges
 ```
 
