@@ -658,6 +658,8 @@ function Troubleshooting() {
     ["\"Walrus Memory is not configured\"", <>Set <C>MEMWAL_KEY</C> and <C>MEMWAL_ACCOUNT_ID</C> in the <C>.env</C> next to <C>.engram/</C>, or pass <C>--env</C>.</>],
     ["\"No LLM configured\" or sleep fails", <>Set <C>GEMINI_API_KEYS</C>. The free tier allows about 20 requests per model per day; add keys from different Google Cloud projects or enable billing.</>],
     ["\"the link code expired\"", <>Codes last 10 minutes. Run <C>link</C> again and approve straight away.</>],
+    ["\"invalid or revoked link token\"", <>The dashboard no longer knows this link (it was removed, or the server lost its data). Run <C>link --server &lt;site&gt;</C> again and approve. Your commits are safe locally and sync again after re-linking.</>],
+    ["\"fetch failed\" when linking", <>The CLI couldn't reach the server. Pass <C>--server</C> with your site's address. Without it, older CLI versions try <C>localhost</C>.</>],
     ["\"nothing to sync — commit first\"", <>Run <C>sleep</C> and <C>commit</C> first. Linking works before your first commit, and the first commit syncs on its own.</>],
     ["Dashboard sync failed after a commit", <>The commit is safe. Run <C>engram sync</C> to retry.</>],
     ["My wallet shows a warning", <>Some wallets flag new websites. Engram only asks for a free sign-in signature, never a transaction. Check the address bar before signing.</>],

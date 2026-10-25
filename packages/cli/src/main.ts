@@ -393,17 +393,19 @@ program
 program
   .command("link")
   .description("link this agent to your Engram dashboard (sign in with your Sui wallet in the browser)")
-  .option("-s, --server <url>", "Engram web app", DEFAULT_SERVER)
+  .option("-s, --server <url>", `Engram web app (default: the server it's already linked to, else ${DEFAULT_SERVER})`)
   .option("-l, --label <name>", "how it's shown on the dashboard (default: agent name)")
-  .action(run(async (o: { server: string; label?: string }) => {
+  .action(run(async (o: { server?: string; label?: string }) => {
     const e = open();
     const existing = readLink(e);
     if (existing) info(`already linked to ${existing.wallet} on ${existing.server} — linking again replaces it`);
-    const start = await startLink(e, o.server, o.label);
+    // Re-linking without --server goes back to the same dashboard, not localhost.
+    const server = o.server ?? existing?.server ?? DEFAULT_SERVER;
+    const start = await startLink(e, server, o.label);
     console.log(`\n  Open ${pc.cyan(pc.bold(start.url))}`);
     console.log(`  and approve code ${pc.bold(start.code)} with your Sui wallet.\n`);
     info("waiting for approval (the code expires in 10 minutes)…");
-    const link = await waitForLink(e, start, o.server);
+    const link = await waitForLink(e, start, server);
     ok(`linked to wallet ${pc.bold(`${link.wallet.slice(0, 10)}…${link.wallet.slice(-4)}`)}`);
     if (e.head()) {
       const r = await syncLink(e, link);
