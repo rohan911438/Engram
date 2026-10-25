@@ -28,7 +28,13 @@ export function ReceiptsView({ onOpenBelief }: { onOpenBelief: (ref: string) => 
   const rows = useMemo(() => (data ?? []).filter((r) => !q || r.action.toLowerCase().includes(q.toLowerCase())), [data, q]);
   if (error) return <ErrorNote message={error} />;
   if (!data) return <Skeleton className="h-64" />;
-  if (data.length === 0) return <Empty>No decisions recorded yet. Agents create receipts through <code className="font-mono">engram.act()</code>.</Empty>;
+  if (data.length === 0)
+    return (
+      <Empty>
+        No decisions recorded yet. A receipt is created each time the agent makes a decision, with{" "}
+        <code className="font-mono">mind.wrap()</code> in the SDK or <code className="font-mono">engram decide</code> in the CLI.
+      </Empty>
+    );
   const alerts = data.filter((r) => parseAction(r.action).alert).length;
 
   return (

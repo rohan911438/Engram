@@ -10,6 +10,28 @@ import type { AppContext } from "./app-layout";
 const ICON: Record<string, typeof User> = { user: User, tatum: Wallet, agent: Bot };
 const FILTERS = ["all", "tatum", "user", "forgotten"] as const;
 
+/** Linked CLI/SDK agents never upload raw episodes, so explain where they are instead of showing an empty list. */
+function LinkedMemory() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="label"><span className="text-brand">●</span> episodes</div>
+        <h1 className="mt-2 font-display text-5xl font-semibold tracking-[-0.05em]">Memory<span className="text-brand">.</span></h1>
+      </div>
+      <div className="panel max-w-2xl p-6">
+        <div className="flex items-center gap-2 font-medium"><EyeOff className="size-4 text-brand" /> Raw memories stay on the agent's machine</div>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          This agent is linked from the CLI or SDK. Only its commits, beliefs and receipts are synced here. Raw episodes are
+          private: they stay encrypted in the agent's own folder and Walrus Memory account. You can see what they turned
+          into under Mind and History.
+        </p>
+        <p className="mt-4 text-sm text-muted-foreground">To browse the raw episodes, run this in the agent's folder:</p>
+        <code className="mt-2 block rounded-lg border border-border bg-background px-3 py-2 font-mono text-[12.5px]">npx @rohankumar4179/engram ui</code>
+      </div>
+    </div>
+  );
+}
+
 /** Every episode the agent has: what it saw, where it lives on Walrus, and a way to forget it. */
 export function MemoryPage() {
   const ctx = useOutletContext<AppContext>();
@@ -23,6 +45,7 @@ export function MemoryPage() {
     [data, filter, q],
   );
 
+  if (ctx.source.startsWith("linked/")) return <LinkedMemory />;
   if (error) return <ErrorNote message={error} />;
   return (
     <div className="space-y-6">
