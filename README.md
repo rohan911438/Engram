@@ -29,15 +29,16 @@ Built for the Tatum × Walrus **Total Recall** hackathon, Track 02: *Smart Agent
 ## Contents
 
 1. [Engram in one minute](#engram-in-one-minute)
-2. [Why Walrus](#why-walrus)
-3. [Architecture](#architecture): system, memory lifecycle, commit flow, verification, dashboard link, data model
-4. [Smart contract: `engram_anchor`](#smart-contract-engram_anchor)
-5. [On-chain evidence: verify it yourself](#on-chain-evidence-verify-it-yourself)
-6. [The demo agent: money-ops](#the-demo-agent-money-ops)
-7. [Use it: CLI](#use-it-cli) · [SDK](#use-it-sdk) · [MCP](#use-it-mcp) · [Web dashboard](#use-it-web-dashboard)
-8. [Under the hood](#under-the-hood)
-9. [Privacy, security and honest limits](#privacy-security-and-honest-limits)
-10. [Run, test and deploy](#run-test-and-deploy)
+2. [Tracks we applied for](#tracks-we-applied-for): Track 02 and Best Walrus Memory
+3. [Why Walrus](#why-walrus)
+4. [Architecture](#architecture): system, memory lifecycle, commit flow, verification, dashboard link, data model
+5. [Smart contract: `engram_anchor`](#smart-contract-engram_anchor)
+6. [On-chain evidence: verify it yourself](#on-chain-evidence-verify-it-yourself)
+7. [The demo agent: money-ops](#the-demo-agent-money-ops)
+8. [Use it: CLI](#use-it-cli) · [SDK](#use-it-sdk) · [MCP](#use-it-mcp) · [Web dashboard](#use-it-web-dashboard)
+9. [Under the hood](#under-the-hood)
+10. [Privacy, security and honest limits](#privacy-security-and-honest-limits)
+11. [Run, test and deploy](#run-test-and-deploy)
 
 ---
 
@@ -53,6 +54,96 @@ Agents now remember things. Once they do, new questions come up:
 | *Storage is permanent. How do we forget?* | **`forget`** destroys that one memory's key and records a **tombstone** in the next commit |
 
 > **Walrus Memory gives agents memory. Engram gives that memory history, proof and control.**
+
+---
+
+## Tracks we applied for
+
+| Category | Prize | Entered | In one line |
+|---|---|---|---|
+| **Track 02: Smart Agents for Real Life** | $1,000 track pool | ✅ Yes | An agent that watches a real wallet, learns its owner's habits, and picks up where it left off, with every decision provable |
+| **Special award: Best Walrus Memory** | $500 | ✅ Yes | A learning loop you can watch, replay, diff, verify and forget, with Walrus Memory behind every layer |
+| Special award: Best Use of Agent Payments | $500 | Not entered | We didn't build x402 / MPP payments. Signed receipts are the groundwork for it (see below) |
+| Special award: Best Tatum AI Builder app | $500 | Not entered | Built by hand. We use Tatum's Sui gRPC gateway for every Mainnet chain read instead |
+
+### Track 02: Smart Agents for Real Life
+
+> *The brief: agents that watch expenses, habits and workflows, and pick up where they left off.*
+
+The demo agent, **money-ops**, does exactly that, on real money rather than sample data:
+
+| The brief asks for… | What Engram's agent does |
+|---|---|
+| **Watching expenses** | Reads its owner's real Sui wallet through **Tatum's Sui gRPC gateway**: every transfer in or out, live |
+| **Learning habits** | Turns salary, rent and subscriptions into beliefs, then **stops alerting** on them (0 of 6 alerts in months 2–3) |
+| **Noticing change** | Raises a WARN when the rent goes up, then **revises** its rent belief after the owner confirms it |
+| **Protecting the owner** | Learns a scam address from one owner message, and raises a **CRITICAL** alert when money goes there again |
+| **Picking up where it left off** | Its memory lives on Walrus and its history is committed, so after a restart it continues from its last commit |
+
+**What makes it stand out in this track:**
+
+- **Real transactions, not a script.** We sent real SUI between five wallets (owner, employer, landlord, streaming service, scammer). The agent never sees the script. It reads the chain like any other wallet.
+- **Every decision is provable.** Each alert, and each decision *not* to alert, is a signed receipt naming the beliefs it used. Anyone can check one with [**Verify**](https://engram-blond.vercel.app/demo/receipts).
+- **Anyone can run their own agent.** Sign in with a Sui wallet and get an agent that learns from *your* transactions, optionally on *your own* Walrus Memory account.
+- **It's a product as well as a demo.** The CLI and SDK are on npm, there's an MCP server for Claude Code and Cursor, and there are 98 automated tests.
+
+### Best Walrus Memory
+
+> *The brief: "Deepest learning loop. Memories that visibly change the product."*
+
+#### The learning loop
+
+Most memory integrations **store and recall**. Engram's loop goes further: memories are
+**consolidated, revised, versioned, proven and forgettable**, and every step is backed by Walrus Memory.
+
+```mermaid
+flowchart LR
+    O["observe<br/>episode → Walrus Memory"] --> S["sleep<br/>episodes → beliefs"]
+    S --> C["commit<br/>manifest → Walrus Memory<br/>root → Sui"]
+    C --> D["decide<br/>semantic recall from<br/>Walrus Memory"]
+    D --> R["receipt<br/>→ Walrus Memory"]
+    R --> O
+```
+
+#### Memories that visibly change the product
+
+The agent's behaviour changes because of what it remembers, and you can **see** each change:
+
+| Period | Memory | Behaviour | Where you can see it |
+|---|---|---|---|
+| Month 1 | Nothing learned yet | Alerts on every payment | [Receipts](https://engram-blond.vercel.app/demo/receipts): no beliefs cited |
+| Months 2–3 | 3 beliefs: salary, rent, subscription | **Quiet** on all 6 normal payments | Each receipt cites `monthly_rent@1`, `salary_payment@1`… |
+| Month 4 | Rent belief **revised**; scam address **learned** | WARN on the rent change | [History](https://engram-blond.vercel.app/demo/history): the Month 4 commit shows + and ✎ changes |
+| Month 5 | Remembers the scam address | **CRITICAL** on the second payment to the scammer | Receipt `r_5080ccb4…` cites `scam_address_0xcbed@1` and [verifies end to end](https://engram-blond.vercel.app/api/demo/verify/r_5080ccb4fd9c3869) |
+
+The [**Mind**](https://engram-blond.vercel.app/demo/mind) view replays this with a time slider, so beliefs appear and revise as you drag.
+
+#### How deeply Walrus Memory is used
+
+| Walrus Memory feature | How Engram uses it |
+|---|---|
+| **Remember** | Every layer is stored: episodes, beliefs, commit manifests and receipts, each in its own namespace |
+| **Semantic recall** | Picks the beliefs relevant to each decision (`mind.beliefs({ about: "rent" })`), instead of handing the agent its whole memory |
+| **Seal encryption** | Memories are private to the owner. Engram adds a per-memory key on top, which makes **provable forgetting** possible |
+| **Manual mode** | When the relayer's embedder went down ([MemWal#1285](https://github.com/MystenLabs/MemWal/issues/1285)), Engram fell back to local embedding + Seal, and verification kept working |
+| **Delegate keys / accounts** | Users can move their agent to **their own** Walrus Memory account, set up from the browser with two wallet-signed transactions |
+| **Recall for proof** | `verify` recalls each commit manifest from Walrus Memory and checks it against the root anchored on Sui |
+
+**What makes it stand out for this award:**
+
+| Typical memory app | Engram |
+|---|---|
+| Stores and recalls raw text | Consolidates text into **beliefs** with confidence and cited evidence |
+| New facts pile up beside old ones | New facts **revise** beliefs (`monthly_rent` reached v5), with full history |
+| You can't see what changed | `diff`, `checkout`, `blame`, `bisect` and a visual time slider |
+| No link between memory and behaviour | Every decision has a **receipt** naming the exact belief versions it used |
+| "Trust us, it's stored" | 16 memories on Walrus Mainnet, [each with a public blob link](#on-chain-evidence-verify-it-yourself), plus roots anchored on Sui |
+| Deleting means trusting the operator | `forget` destroys the key, retracts dependent beliefs and records a tombstone |
+
+### The awards we didn't enter
+
+- **Best Use of Agent Payments.** Engram doesn't make x402 or MPP payments today. But a paid memory sale needs exactly what Engram already has: scoped beliefs, signed receipts and on-chain proof of what was handed over. **Paid memory sharing between agents** (MPP / x402 on Sui) is on our [roadmap](Idea/08-built-and-next.md).
+- **Best Tatum AI Builder app.** We built Engram by hand rather than with ai.tatum.io. Tatum is still central to it: every Mainnet chain read goes through Tatum's Sui gRPC gateway.
 
 ---
 
@@ -586,7 +677,7 @@ apps/web            web app (React, Vite, Tailwind, shadcn/ui, React Flow, dapp-
 apps/server         API server: wallet auth, hosted agents, link flow, live verify
 examples/money-ops  wallet-watching agent (Tatum feed, real-transaction story)
 contracts/          engram_anchor Move package
-docs/               spike findings, blog post, demo screenshots
+docs/blog/          screenshots used by the README and blog.md
 Idea/               product write-up for judges
 ```
 

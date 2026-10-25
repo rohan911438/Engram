@@ -41,7 +41,7 @@ and pick up where they left off.
 
 - Live web app with a public demo, docs and wallet sign-in: https://engram-blond.vercel.app
 - Docs page for integrators: https://engram-blond.vercel.app/docs
-- Demo video, blog post (`docs/blog-post.md`) and README.
+- Demo video, [blog post](https://dev.to/roan911/your-ai-agent-remembers-everything-can-it-prove-any-of-it-51og) and README.
 
 ## Best Walrus Memory: a learning loop you can watch
 
@@ -64,4 +64,4 @@ memories, and every alert can be `verify`d.
 - [x] 10+ memories stored
 - [x] Working demo: live app + video
 - [x] Public repo
-- [x] Blog post draft (`docs/blog-post.md`)
+- [x] Published blog post ([dev.to](https://dev.to/roan911/your-ai-agent-remembers-everything-can-it-prove-any-of-it-51og))
