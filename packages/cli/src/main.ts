@@ -283,6 +283,18 @@ program
   }));
 
 program
+  .command("decide <action>")
+  .description("record a decision as a signed receipt, with Merkle proofs for the beliefs it used")
+  .requiredOption("-u, --used <beliefs...>", "belief ids the decision relied on, e.g. b_rent_payment")
+  .option("-i, --input <text>", "what the agent was asked or saw (only its hash is stored)", "")
+  .action(run(async (action: string, o: { used: string[]; input: string }) => {
+    const e = open();
+    const r = e.decide({ action, input: o.input || action, beliefs: o.used });
+    ok(`receipt ${pc.magenta(r.id)} → ${r.beliefs.join(", ")} @ ${short(r.commitId)}`);
+    await autoSync(e);
+  }));
+
+program
   .command("receipts")
   .description("decision receipts")
   .action(run(() => {

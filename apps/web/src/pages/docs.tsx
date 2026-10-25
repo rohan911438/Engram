@@ -607,6 +607,7 @@ function CliReference() {
           [<C>checkout &lt;ref&gt;</C>, "Beliefs at a commit, HEAD~n or a date."],
           [<C>blame &lt;belief&gt;</C>, "The episodes (with Walrus blob IDs) behind a belief."],
           [<C>bisect &lt;good&gt; &lt;bad&gt;</C>, <>Find the commit where memory went wrong (<C>--grep</C> or <C>--ask</C>).</>],
+          [<C>decide &lt;action&gt; -u &lt;belief&gt;</C>, "Record a decision as a signed receipt, with proofs for the beliefs it used. Syncs if linked."],
           [<C>receipts</C>, "Decision receipts."],
           [<C>verify [ref]</C>, "Verify a receipt or commit end to end."],
           [<C>forget &lt;episode&gt;</C>, "Crypto-shred an episode and retract what depended on it."],
